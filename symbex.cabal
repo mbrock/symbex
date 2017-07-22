@@ -19,9 +19,11 @@ build-type:
 cabal-version:
   >=1.10
 
-library
+executable symbex
   exposed-modules:
     Symbex
+  main-is:
+    Main.hs
   ghc-options:
     -O2 -Wall -Werror
   build-depends:
@@ -38,7 +40,8 @@ library
     lens                              >= 4.15.1 && < 4.16,
     optparse-generic                  >= 1.1.5 && < 1.3,
     rosezipper                        >= 0.2 && < 0.3,
-    uniplate                          >= 1.6 && < 1.7
+    uniplate                          >= 1.6 && < 1.7,
+    s-cargot                          == 0.1.2.0
   hs-source-dirs:
     src
   default-language:

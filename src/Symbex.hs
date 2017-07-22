@@ -5,7 +5,6 @@
 module Symbex where
 
 import Prelude hiding (not)
-import Data.List (intercalate)
 import Control.Monad.RWS (RWS, MonadFix, tell, get, modify, runRWS)
 import Data.Generics.Uniplate.Data
 import Data.Data (Data)
@@ -51,7 +50,7 @@ multisig = assemble $ mdo
   confirm <- label
   push 32; calldatasize; gt; push trigger; jumpi
   push 0; calldataload; dup 1; sload
-  dup 1; dup 3; byte; push nope; jumpi
+  dup 1; dup 4; byte; push nope; jumpi
   dup 1; push 0; mstore
   push 0; byte; push 1; add; push 0; mstore8
   push 1; swap 2; mstore8
@@ -345,23 +344,23 @@ exec (state @ State { stack, pc, memory, storage }) c =
     Call ->
       case stack of
         (_:_xTo:_xValue:_xInOffset:_xInSize:xOutOffset:xOutSize:stack') -> do
-          -- Step $ (state
-          --     { stack = Actual 1 : stack'
-          --     , pc = succ pc
-          --     , memory = WithCallResult (xOutOffset, xOutSize) memory
-          --     , storage = ArbitrarilyAltered storage
-          --     })
-          Fork (Symbolic SomeCallResult)
-            (state
+          Step $ (state
               { stack = Actual 1 : stack'
               , pc = succ pc
               , memory = WithCallResult (xOutOffset, xOutSize) memory
               , storage = ArbitrarilyAltered storage
               })
-            (state
-              { stack = Actual 0 : stack'
-              , pc = succ pc
-              })
+          -- Fork (Symbolic SomeCallResult)
+          --   (state
+          --     { stack = Actual 1 : stack'
+          --     , pc = succ pc
+          --     , memory = WithCallResult (xOutOffset, xOutSize) memory
+          --     , storage = ArbitrarilyAltered storage
+          --     })
+          --   (state
+          --     { stack = Actual 0 : stack'
+          --     , pc = succ pc
+          --     })
         _ -> StackUnderrun (c !! pc)
     Not ->
       case stack of
@@ -437,79 +436,48 @@ isArbitrarilyAltered m =
     WithCallResult _ x -> isArbitrarilyAltered x
     ArbitrarilyAltered _ -> True
 
-showPath :: Path -> IO ()
-showPath (x, State { stack, memory, storage }, o) = do
-  putStrLn $ "Conditions:"
-  mapM_ (putStrLn . ("    " ++)) (map (display . rewrite optimize) x)
-  putStrLn ""
-  putStrLn $ "Outcome: " ++ show o
-  putStr "Stack:   "
-  putStrLn $ "(" ++ intercalate " " (map (display . rewrite optimize) stack) ++ ")"
-  -- putStr "Memory:  "
-  -- putStrLn (display memory)
-  putStr "Memory:  "
-  putStrLn (display (rewriteBi (optimize :: Value -> Maybe Value) memory))
-  -- putStr "Storage: "
-  -- putStrLn (display storage)
-  putStr "Storage: "
-  putStrLn (display (rewriteBi (optimize :: Value -> Maybe Value) storage))
-  putStrLn ""
-
-run :: Code -> [Path]
-run code =
-  let state = State
-        { stack = []
-        , pc = 0
-        , memory = Null
-        , storage = Null
-        }
-  in step code state
-
-showPaths :: [Path] -> IO ()
-showPaths = mapM_ (\(i, x) -> putStrLn ("Path " ++ show (i :: Int) ++ ". ") >> showPath x) . zip [1..]
-
 -- Spam
 
-class Display a where
-  display :: a -> String
-
-instance Display Value where
-  display (Actual x) = show x
-  display (Symbolic v) = display v
-
-instance Display Int where
-  display = show
-
-instance Display Variable where
-  display TheCaller = "(caller)"
-  display TheCalldatasize = "(calldatasize)"
-  display TheTimestamp = "(timestamp)"
-  display TheGaslimit = "(gaslimit)"
-  display SomeCallResult = "(some-call-result)"
-  display (TheCalldataWord a) = "(calldataload " ++ display a ++ ")"
-  display (TheByte a b) = "(byte " ++ display a ++ " " ++ display b ++ ")"
-  display (SetByte a b c) = "(set-byte " ++ display a ++ " " ++ display b ++ " " ++ display c ++ ")"
-  display (Equality a b) = "(eq? " ++ display a ++ " " ++ display b ++ ")"
-  display (Minus a b) = "(- " ++ display a ++ " " ++ display b ++ ")"
-  display (Plus a b) = "(+ " ++ display a ++ " " ++ display b ++ ")"
-  display (a `IsGreaterThan` b) = "(> " ++ display a ++ " " ++ display b ++ ")"
-  display (Negation a) = "(not " ++ display a ++ ")"
-  display (Size a) = "(size " ++ display a ++ ")"
-  display (TheHashOf a b m) = "(keccak256 " ++ display a ++ " " ++ display b ++ " " ++ display m ++ ")"
-  display (MemoryAt x m) = "(mload " ++ display x ++ " " ++ display m ++ ")"
-  display (StorageAt x m) = "(sload " ++ display x ++ " " ++ display m ++ ")"
-  display (Max a b) = "(max " ++ display a ++ " " ++ display b ++ ")"
-
-instance Display Memory where
-  display Null = "(initial)"
-  display (With x y m) = "(set " ++ display x ++ " " ++ display y ++ " " ++ display m ++ ")"
-  display (WithByte x y m) = "(set-byte " ++ display x ++ " " ++ display y ++ " " ++ display m ++ ")"
-  display (WithCalldata (n, x, y) m) =
-    "(set-calldata " ++ display n ++ " " ++ display x ++ " " ++ display y ++ " " ++ display m ++ ")"
-  display (WithCallResult (x, y) m) =
-    "(set-call-result " ++ display x ++ " " ++ display y ++ " " ++ display m ++ ")"
-  display (ArbitrarilyAltered m) =
-    "(arbitrarily-altered " ++ display m ++ ")"
+--class Display a where
+--  display :: a -> String
+--
+--instance Display Value where
+--  display (Actual x) = show x
+--  display (Symbolic v) = display v
+--
+--instance Display Int where
+--  display = show
+--
+--instance Display Variable where
+--  display TheCaller = "(caller)"
+--  display TheCalldatasize = "(calldatasize)"
+--  display TheTimestamp = "(timestamp)"
+--  display TheGaslimit = "(gaslimit)"
+--  display SomeCallResult = "(some-call-result)"
+--  display (TheCalldataWord a) = "(calldataload " ++ display a ++ ")"
+--  display (TheByte a b) = "(byte " ++ display a ++ " " ++ display b ++ ")"
+--  display (SetByte a b c) = "(set-byte " ++ display a ++ " " ++ display b ++ " " ++ display c ++ ")"
+--  display (Equality a b) = "(eq? " ++ display a ++ " " ++ display b ++ ")"
+--  display (Minus a b) = "(- " ++ display a ++ " " ++ display b ++ ")"
+--  display (Plus a b) = "(+ " ++ display a ++ " " ++ display b ++ ")"
+--  display (a `IsGreaterThan` b) = "(> " ++ display a ++ " " ++ display b ++ ")"
+--  display (Negation a) = "(not " ++ display a ++ ")"
+--  display (Size a) = "(size " ++ display a ++ ")"
+--  display (TheHashOf a b m) = "(keccak256 " ++ display a ++ " " ++ display b ++ " " ++ display m ++ ")"
+--  display (MemoryAt x m) = "(mload " ++ display x ++ " " ++ display m ++ ")"
+--  display (StorageAt x m) = "(sload " ++ display x ++ " " ++ display m ++ ")"
+--  display (Max a b) = "(max " ++ display a ++ " " ++ display b ++ ")"
+--
+--instance Display Memory where
+--  display Null = "(initial)"
+--  display (With x y m) = "(set " ++ display x ++ " " ++ display y ++ " " ++ display m ++ ")"
+--  display (WithByte x y m) = "(set-byte " ++ display x ++ " " ++ display y ++ " " ++ display m ++ ")"
+--  display (WithCalldata (n, x, y) m) =
+--    "(set-calldata " ++ display n ++ " " ++ display x ++ " " ++ display y ++ " " ++ display m ++ ")"
+--  display (WithCallResult (x, y) m) =
+--    "(set-call-result " ++ display x ++ " " ++ display y ++ " " ++ display m ++ ")"
+--  display (ArbitrarilyAltered m) =
+--    "(arbitrarily-altered " ++ display m ++ ")"
 
 push :: Int -> Assembly; push = emit . Push
 dup :: Int -> Assembly; dup = emit . Dup
