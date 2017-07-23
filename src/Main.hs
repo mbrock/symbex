@@ -46,4 +46,4 @@ showPaths = mapM_ f . zip [1..]
       showPath x
 
 main :: IO ()
-main = showPaths (run multisig)
+main = showPaths (run multisig2)

@@ -4,7 +4,7 @@
 
 module Symbex where
 
-import Prelude hiding (not)
+import Prelude hiding (not, and, or, exp)
 import Control.Monad.RWS (RWS, MonadFix, tell, get, modify, runRWS)
 import Data.Generics.Uniplate.Data
 import Data.Data (Data)
@@ -66,6 +66,36 @@ multisig = assemble $ mdo
   push 64; mload; push 32; mload
   gaslimit; call
 
+multisig2 :: [Instr]
+multisig2 = assemble $ mdo
+  push 8; push 10; caller; eq; push confirm; jumpi; pop
+  push 9; push 11; caller; eq; push confirm; jumpi; pop
+  push 10; push 12; caller; eq; push confirm; jumpi; pop
+  push 11; push 13; caller; eq; push confirm; jumpi; pop
+  push 12; push 14; caller; eq; push confirm; jumpi; pop
+  push 13; push 15; caller; eq; push confirm; jumpi; pop
+  nope <- label; stop
+
+  confirm <- label
+  push 32; calldatasize; gt; push trigger; jumpi
+  push 0; calldataload; dup 1; sload
+  push 2; dup 4; exp
+  dup 1; dup 2; and; push nope; jumpi
+  dup 2; or
+  push 255; not; and
+  swap 1; push 255; and; push 1; add
+  or; swap 1; sstore; stop
+
+  trigger <- label
+  calldatasize; push 0; push 0; calldatacopy
+  calldatasize; push 0; keccak256
+  push 2; dup 2; sload; push 255; and; lt; push nope; jumpi
+  push 0; calldataload; timestamp; gt; push nope; jumpi
+  push 255; not; swap 1; sstore
+  push 0; push 0; push 96; calldatasize; sub; push 96
+  push 64; calldataload; push 32; calldataload
+  gaslimit; call; pop
+
 data Instr
   = Push Int
   | Dup Int
@@ -80,6 +110,7 @@ data Instr
   | Mload
   | Calldatasize
   | Gt
+  | Lt
   | Calldataload
   | Sload
   | Sstore
@@ -93,6 +124,9 @@ data Instr
   | Sub
   | Add
   | Not
+  | And
+  | Or
+  | Exp
   deriving Show
 
 data Value = Actual Int | Symbolic Variable
@@ -110,6 +144,7 @@ data Variable
   | Size Memory
   | Equality Value Value
   | IsGreaterThan Value Value
+  | IsLessThan Value Value
   | Negation Value
   | Minus Value Value
   | Plus Value Value
@@ -117,6 +152,9 @@ data Variable
   | MemoryAt Value Memory
   | StorageAt Value Memory
   | Max Value Value
+  | Conjunction Value Value
+  | Disjunction Value Value
+  | Exponentiation Value Value
   deriving (Show, Eq, Data, Typeable)
 
 dependsOnCall :: Value -> Bool
@@ -276,6 +314,15 @@ exec (state @ State { stack, pc, memory, storage }) c =
         _ ->
           StackUnderrun (c !! pc)
 
+    Lt ->
+      case stack of
+        (x:y:stack') ->
+          Step $ state
+            { stack = Symbolic (x `IsLessThan` y) : stack'
+            , pc = succ pc }
+        _ ->
+          StackUnderrun (c !! pc)
+
     Calldataload ->
       case stack of
         (x:stack') ->
@@ -338,6 +385,30 @@ exec (state @ State { stack, pc, memory, storage }) c =
         (x:y:stack') ->
           Step $ state
             { stack = Symbolic (Plus y x) : stack'
+            , pc = succ pc }
+        _ -> StackUnderrun (c !! pc)
+
+    Exp ->
+      case stack of
+        (x:y:stack') ->
+          Step $ state
+            { stack = Symbolic (Exponentiation y x) : stack'
+            , pc = succ pc }
+        _ -> StackUnderrun (c !! pc)
+
+    And ->
+      case stack of
+        (x:y:stack') ->
+          Step $ state
+            { stack = Symbolic (Conjunction y x) : stack'
+            , pc = succ pc }
+        _ -> StackUnderrun (c !! pc)
+
+    Or ->
+      case stack of
+        (x:y:stack') ->
+          Step $ state
+            { stack = Symbolic (Disjunction y x) : stack'
             , pc = succ pc }
         _ -> StackUnderrun (c !! pc)
 
@@ -500,8 +571,12 @@ calldatacopy :: Assembly; calldatacopy = emit Calldatacopy
 timestamp :: Assembly; timestamp = emit Timestamp
 gaslimit :: Assembly; gaslimit = emit Gaslimit
 gt :: Assembly; gt = emit Gt
+lt :: Assembly; lt = emit Lt
 add :: Assembly; add = emit Add
 sub :: Assembly; sub = emit Sub
 not :: Assembly; not = emit Not
 call :: Assembly; call = emit Call
 keccak256 :: Assembly; keccak256 = emit Keccak256
+exp :: Assembly; exp = emit Exp
+and :: Assembly; and = emit And
+or :: Assembly; or = emit Or

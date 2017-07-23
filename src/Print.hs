@@ -37,6 +37,10 @@ instance SDisplay Variable where
   s (MemoryAt x m) = A "mload" ::: s x ::: s m ::: Nil
   s (StorageAt x m) = A "sload" ::: s x ::: s m ::: Nil
   s (Max a b) = A "max" ::: s a ::: s b ::: Nil
+  s (IsLessThan a b) = A "<" ::: s a ::: s b ::: Nil
+  s (Conjunction a b) = A "and" ::: s a ::: s b ::: Nil
+  s (Disjunction a b) = A "or" ::: s a ::: s b ::: Nil
+  s (Exponentiation a b) = A "exp" ::: s a ::: s b ::: Nil
 
 instance SDisplay Memory where
   s Null = A "initial" ::: Nil
