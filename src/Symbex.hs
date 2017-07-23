@@ -1,4 +1,5 @@
 {-# Language DeriveDataTypeable #-}
+{-# Language DeriveGeneric #-}
 {-# Language RecursiveDo #-}
 {-# Language NamedFieldPuns #-}
 
@@ -9,6 +10,8 @@ import Control.Monad.RWS (RWS, MonadFix, tell, get, modify, runRWS)
 import Data.Generics.Uniplate.Data
 import Data.Data (Data)
 import Data.Typeable (Typeable)
+import GHC.Generics
+import Data.Aeson (ToJSON ())
 
 newtype Assembler i a =
   Assembler (RWS () [i] Int a)
@@ -80,7 +83,7 @@ multisig2 = assemble $ mdo
   push 32; calldatasize; gt; push trigger; jumpi
   push 0; calldataload; dup 1; sload
   push 2; dup 4; exp
-  dup 1; dup 2; and; push nope; jumpi
+  dup 1; dup 3; and; push nope; jumpi
   dup 2; or
   push 255; not; and
   swap 1; push 255; and; push 1; add
@@ -127,13 +130,20 @@ data Instr
   | And
   | Or
   | Exp
-  deriving Show
+  deriving (Show, Generic)
 
-data Value = Actual Int | Symbolic Variable
-  deriving (Show, Eq, Data, Typeable)
+instance ToJSON Instr
+instance ToJSON Value
+instance ToJSON Memory
+instance ToJSON State
+instance ToJSON Possibility
+instance ToJSON Path
+instance ToJSON Outcome
+instance ToJSON Tree
 
-data Variable
-  = TheCaller
+data Value
+  = Actual Int
+  | TheCaller
   | TheCalldatasize
   | TheCalldataWord Value
   | TheTimestamp
@@ -155,10 +165,12 @@ data Variable
   | Conjunction Value Value
   | Disjunction Value Value
   | Exponentiation Value Value
-  deriving (Show, Eq, Data, Typeable)
+  | SetBit Value Value
+  | IsBitSet Value Value
+  deriving (Show, Eq, Data, Typeable, Generic)
 
 dependsOnCall :: Value -> Bool
-dependsOnCall = elem (Symbolic SomeCallResult) . universe
+dependsOnCall = elem SomeCallResult . universe
 
 type PC = Int
 type Stack = [Value]
@@ -171,21 +183,21 @@ data Memory
   | WithCalldata (Value, Value, Value) Memory
   | WithCallResult (Value, Value) Memory
   | ArbitrarilyAltered Memory
-  deriving (Show, Eq, Data, Typeable)
+  deriving (Show, Eq, Data, Typeable, Generic)
 
 data State = State
   { stack   :: Stack
   , pc      :: PC
   , memory  :: Memory
   , storage :: Memory
-  } deriving Show
+  } deriving (Show, Generic)
 
 data Possibility
   = Step State
   | Fork Value State State
   | StackUnderrun Instr
   | Done
-  deriving Show
+  deriving (Show, Generic)
 
 exec :: State -> Code -> Possibility
 exec (State { pc }) c | pc >= length c =
@@ -206,7 +218,7 @@ exec (state @ State { stack, pc, memory, storage }) c =
           Fork x
             (state { stack = stack', pc = j })
             (state { stack = stack', pc = succ pc })
-        (Symbolic _ : _) ->
+        (_ : _ : _) ->
           error "symbolic jump"
         _ ->
           StackUnderrun (c !! pc)
@@ -228,10 +240,14 @@ exec (state @ State { stack, pc, memory, storage }) c =
           StackUnderrun (c !! pc)
 
     Swap n ->
+      -- swap 5
+      -- 1 2 3 4 5 6 7 8 9 10
+      -- 6 : 1 2 3 4 5 : 7 8 9 10
+      -- #n : take n : drop (n + 1)
       if length stack >= n + 1
       then
         let stack' = (stack !! n) :
-                       (drop 1 (take n stack) ++ drop (n - 1) stack)
+                       (take n stack ++ drop (n + 1) stack)
         in Step $ state
           { stack = stack'
           , pc = succ pc }
@@ -240,14 +256,14 @@ exec (state @ State { stack, pc, memory, storage }) c =
 
     Caller ->
       Step $ state
-        { stack = Symbolic TheCaller : stack
+        { stack = TheCaller : stack
         , pc = succ pc }
 
     Eq ->
       case stack of
         (x:y:stack') ->
           Step $ state
-            { stack = Symbolic (Equality x y) : stack'
+            { stack = Equality x y : stack'
             , pc = succ pc }
         _ ->
           StackUnderrun (c !! pc)
@@ -276,7 +292,7 @@ exec (state @ State { stack, pc, memory, storage }) c =
       case stack of
         (x:stack') ->
           Step $ state
-            { stack = Symbolic (MemoryAt x memory) : stack'
+            { stack = MemoryAt x memory : stack'
             , pc = succ pc }
         _ ->
           StackUnderrun (c !! pc)
@@ -295,21 +311,21 @@ exec (state @ State { stack, pc, memory, storage }) c =
       case stack of
         (x:stack') ->
           Step $ state
-            { stack = Symbolic (StorageAt x storage) : stack'
+            { stack = StorageAt x storage : stack'
             , pc = succ pc }
         _ ->
           StackUnderrun (c !! pc)
 
     Calldatasize ->
       Step $ state
-        { stack = Symbolic TheCalldatasize : stack
+        { stack = TheCalldatasize : stack
         , pc = succ pc }
 
     Gt ->
       case stack of
         (x:y:stack') ->
           Step $ state
-            { stack = Symbolic (x `IsGreaterThan` y) : stack'
+            { stack = (x `IsGreaterThan` y) : stack'
             , pc = succ pc }
         _ ->
           StackUnderrun (c !! pc)
@@ -318,7 +334,7 @@ exec (state @ State { stack, pc, memory, storage }) c =
       case stack of
         (x:y:stack') ->
           Step $ state
-            { stack = Symbolic (x `IsLessThan` y) : stack'
+            { stack = (x `IsLessThan` y) : stack'
             , pc = succ pc }
         _ ->
           StackUnderrun (c !! pc)
@@ -327,7 +343,7 @@ exec (state @ State { stack, pc, memory, storage }) c =
       case stack of
         (x:stack') ->
           Step $ state
-            { stack = Symbolic (TheCalldataWord x) : stack'
+            { stack = (TheCalldataWord x) : stack'
             , pc = succ pc }
         _ -> StackUnderrun (c !! pc)
 
@@ -335,7 +351,7 @@ exec (state @ State { stack, pc, memory, storage }) c =
       case stack of
         (i:x:stack') ->
           Step $ state
-            { stack = Symbolic (TheByte i x) : stack'
+            { stack = (TheByte i x) : stack'
             , pc = succ pc }
         _ -> StackUnderrun (c !! pc)
 
@@ -351,32 +367,32 @@ exec (state @ State { stack, pc, memory, storage }) c =
 
     Msize ->
       Step $ state
-        { stack = Symbolic (Size memory) : stack
+        { stack = (Size memory) : stack
         , pc = succ pc }
 
     Keccak256 ->
       case stack of
         (xOffset:xSize:stack') ->
           Step $ state
-            { stack = Symbolic (TheHashOf xOffset xSize memory) : stack'
+            { stack = (TheHashOf xOffset xSize memory) : stack'
             , pc = succ pc }
         _ -> StackUnderrun (c !! pc)
 
     Timestamp ->
       Step $ state
-        { stack = Symbolic TheTimestamp : stack
+        { stack = TheTimestamp : stack
         , pc = succ pc }
 
     Gaslimit ->
       Step $ state
-        { stack = Symbolic TheGaslimit : stack
+        { stack = TheGaslimit : stack
         , pc = succ pc }
 
     Sub ->
       case stack of
         (x:y:stack') ->
           Step $ state
-            { stack = Symbolic (Minus y x) : stack'
+            { stack = (Minus y x) : stack'
             , pc = succ pc }
         _ -> StackUnderrun (c !! pc)
 
@@ -384,7 +400,7 @@ exec (state @ State { stack, pc, memory, storage }) c =
       case stack of
         (x:y:stack') ->
           Step $ state
-            { stack = Symbolic (Plus y x) : stack'
+            { stack = (Plus y x) : stack'
             , pc = succ pc }
         _ -> StackUnderrun (c !! pc)
 
@@ -392,7 +408,7 @@ exec (state @ State { stack, pc, memory, storage }) c =
       case stack of
         (x:y:stack') ->
           Step $ state
-            { stack = Symbolic (Exponentiation y x) : stack'
+            { stack = (Exponentiation y x) : stack'
             , pc = succ pc }
         _ -> StackUnderrun (c !! pc)
 
@@ -400,7 +416,7 @@ exec (state @ State { stack, pc, memory, storage }) c =
       case stack of
         (x:y:stack') ->
           Step $ state
-            { stack = Symbolic (Conjunction y x) : stack'
+            { stack = (Conjunction y x) : stack'
             , pc = succ pc }
         _ -> StackUnderrun (c !! pc)
 
@@ -408,7 +424,7 @@ exec (state @ State { stack, pc, memory, storage }) c =
       case stack of
         (x:y:stack') ->
           Step $ state
-            { stack = Symbolic (Disjunction y x) : stack'
+            { stack = (Disjunction y x) : stack'
             , pc = succ pc }
         _ -> StackUnderrun (c !! pc)
 
@@ -421,7 +437,7 @@ exec (state @ State { stack, pc, memory, storage }) c =
               , memory = WithCallResult (xOutOffset, xOutSize) memory
               , storage = ArbitrarilyAltered storage
               })
-          -- Fork (Symbolic SomeCallResult)
+          -- Fork (SomeCallResult)
           --   (state
           --     { stack = Actual 1 : stack'
           --     , pc = succ pc
@@ -437,29 +453,42 @@ exec (state @ State { stack, pc, memory, storage }) c =
       case stack of
         (x:stack') ->
           Step $ state
-            { stack = Symbolic (Negation x) : stack'
+            { stack = (Negation x) : stack'
             , pc = succ pc }
         _ -> StackUnderrun (c !! pc)
 
 -- !
 
 data Outcome = Good | Bad String
-  deriving Show
+  deriving (Show, Generic)
 
-type Path = ([Value], State, Outcome)
+data Path = Path [Value] State Outcome
+  deriving Generic
+
+data Tree = One State Outcome | Two Value Tree Tree
+  deriving Generic
+
+step' :: Code -> State -> Tree
+step' c state =
+  case exec state c of
+    Done -> One state Good
+    StackUnderrun x -> One state (Bad (show x))
+    Step s' -> step' c s'
+    Fork p s1 s2 ->
+      Two p (step' c s1) (step' c s2)
 
 step :: Code -> State -> [Path]
 step c state =
   case exec state c of
-    Done -> [([], state, Good)]
-    StackUnderrun x -> [([], state, Bad (show x))]
+    Done -> [Path [] state Good]
+    StackUnderrun x -> [Path [] state (Bad (show x))]
     Step s' -> step c s'
     Fork p s1 s2 ->
-      map (\(ps, s', o) -> (p : ps, s', o)) (step c s1)
-        ++ map (\(ps, s', o) -> (Symbolic (Negation p) : ps, s', o)) (step c s2)
+      map (\(Path ps s' o) -> Path (p : ps) s' o) (step c s1)
+        ++ map (\(Path ps s' o) -> Path ((Negation p) : ps) s' o) (step c s2)
 
 pathDoesCall :: Path -> Bool
-pathDoesCall (x, _, _) = any dependsOnCall x
+pathDoesCall (Path x _ _) = any dependsOnCall x
 
 class Optimize a where
   optimize :: a -> Maybe a
@@ -469,16 +498,20 @@ memorySize = \case
   Null ->
     Actual 0
   WithCalldata (n, _, dst) m ->
-    Symbolic (Max (memorySize m) (Symbolic (Plus dst n)))
+    (Max (memorySize m) ((Plus dst n)))
   x ->
-    Symbolic (Size x)
+    (Size x)
 
 instance Optimize Value where
   optimize = \case
-    Symbolic (Size x) -> Just (memorySize x)
-    Symbolic (Max (Actual 0) x) -> Just x
-    Symbolic (Plus (Actual 0) x) -> Just x
-    Symbolic (MemoryAt x mem) -> resolveMemory x mem
+    (Size x) -> Just (memorySize x)
+    (Max (Actual 0) x) -> Just x
+    (Plus (Actual 0) x) -> Just x
+    (MemoryAt x mem) -> resolveMemory x mem
+    (Disjunction ((Exponentiation (Actual 2) (Actual x))) y) ->
+      Just ((SetBit (Actual (x + 1)) y))
+    (Conjunction ((Exponentiation (Actual 2) (Actual x))) y) ->
+      Just ((IsBitSet (Actual (x + 1)) y))
     _ -> Nothing
 
 resolveMemory :: Value -> Memory -> Maybe Value
@@ -491,7 +524,7 @@ resolveMemory (Actual i) (WithByte (Actual j) z m) =
     -- We have information about one byte of the requested word.
     case resolveMemory (Actual i) m of
       Nothing -> Nothing
-      Just x' -> Just (Symbolic (SetByte j z x'))
+      Just x' -> Just ((SetByte j z x'))
   else
     -- This byte is unrelated to the requested word.
     resolveMemory (Actual i) m
@@ -514,7 +547,7 @@ isArbitrarilyAltered m =
 --
 --instance Display Value where
 --  display (Actual x) = show x
---  display (Symbolic v) = display v
+--  display (v) = display v
 --
 --instance Display Int where
 --  display = show

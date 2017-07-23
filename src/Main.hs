@@ -8,8 +8,11 @@ import Print
 import Data.List (intercalate)
 import Data.Generics.Uniplate.Data
 
+import Data.Aeson (encode)
+import qualified Data.ByteString.Lazy.Char8 as B8
+
 showPath :: Path -> IO ()
-showPath (x, State { stack, memory, storage }, o) = do
+showPath (Path x (State { stack, memory, storage }) o) = do
   putStrLn $ "Conditions:"
   mapM_ putStrLn (map (display . rewrite optimize) x)
   putStrLn ""
@@ -26,15 +29,16 @@ showPath (x, State { stack, memory, storage }, o) = do
   putStrLn (display (rewriteBi (optimize :: Value -> Maybe Value) storage))
   putStrLn ""
 
+emptyState :: State
+emptyState = State
+  { stack = []
+  , pc = 0
+  , memory = Null
+  , storage = Null
+  }
+
 run :: Code -> [Path]
-run code =
-  let state = State
-        { stack = []
-        , pc = 0
-        , memory = Null
-        , storage = Null
-        }
-  in step code state
+run code = step code emptyState
 
 showPaths :: [Path] -> IO ()
 showPaths = mapM_ f . zip [1..]
@@ -46,4 +50,5 @@ showPaths = mapM_ f . zip [1..]
       showPath x
 
 main :: IO ()
-main = showPaths (run multisig2)
+main = --showPaths (run multisig2)
+  B8.putStrLn . encode $ step' multisig2 emptyState

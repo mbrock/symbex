@@ -16,9 +16,6 @@ instance SDisplay Int where
 
 instance SDisplay Value where
   s (Actual x) = A (show x)
-  s (Symbolic x) = s x
-
-instance SDisplay Variable where
   s TheCaller = A "caller" ::: Nil
   s TheCalldatasize = A "calldatasize" ::: Nil
   s TheTimestamp = A "timestamp" ::: Nil
@@ -41,6 +38,8 @@ instance SDisplay Variable where
   s (Conjunction a b) = A "and" ::: s a ::: s b ::: Nil
   s (Disjunction a b) = A "or" ::: s a ::: s b ::: Nil
   s (Exponentiation a b) = A "exp" ::: s a ::: s b ::: Nil
+  s (SetBit a b) = A "set-bit" ::: s a ::: s b ::: Nil
+  s (IsBitSet a b) = A "bit-set?" ::: s a ::: s b ::: Nil
 
 instance SDisplay Memory where
   s Null = A "initial" ::: Nil
