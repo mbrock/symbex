@@ -540,49 +540,6 @@ isArbitrarilyAltered m =
     WithCallResult _ x -> isArbitrarilyAltered x
     ArbitrarilyAltered _ -> True
 
--- Spam
-
---class Display a where
---  display :: a -> String
---
---instance Display Value where
---  display (Actual x) = show x
---  display (v) = display v
---
---instance Display Int where
---  display = show
---
---instance Display Variable where
---  display TheCaller = "(caller)"
---  display TheCalldatasize = "(calldatasize)"
---  display TheTimestamp = "(timestamp)"
---  display TheGaslimit = "(gaslimit)"
---  display SomeCallResult = "(some-call-result)"
---  display (TheCalldataWord a) = "(calldataload " ++ display a ++ ")"
---  display (TheByte a b) = "(byte " ++ display a ++ " " ++ display b ++ ")"
---  display (SetByte a b c) = "(set-byte " ++ display a ++ " " ++ display b ++ " " ++ display c ++ ")"
---  display (Equality a b) = "(eq? " ++ display a ++ " " ++ display b ++ ")"
---  display (Minus a b) = "(- " ++ display a ++ " " ++ display b ++ ")"
---  display (Plus a b) = "(+ " ++ display a ++ " " ++ display b ++ ")"
---  display (a `IsGreaterThan` b) = "(> " ++ display a ++ " " ++ display b ++ ")"
---  display (Negation a) = "(not " ++ display a ++ ")"
---  display (Size a) = "(size " ++ display a ++ ")"
---  display (TheHashOf a b m) = "(keccak256 " ++ display a ++ " " ++ display b ++ " " ++ display m ++ ")"
---  display (MemoryAt x m) = "(mload " ++ display x ++ " " ++ display m ++ ")"
---  display (StorageAt x m) = "(sload " ++ display x ++ " " ++ display m ++ ")"
---  display (Max a b) = "(max " ++ display a ++ " " ++ display b ++ ")"
---
---instance Display Memory where
---  display Null = "(initial)"
---  display (With x y m) = "(set " ++ display x ++ " " ++ display y ++ " " ++ display m ++ ")"
---  display (WithByte x y m) = "(set-byte " ++ display x ++ " " ++ display y ++ " " ++ display m ++ ")"
---  display (WithCalldata (n, x, y) m) =
---    "(set-calldata " ++ display n ++ " " ++ display x ++ " " ++ display y ++ " " ++ display m ++ ")"
---  display (WithCallResult (x, y) m) =
---    "(set-call-result " ++ display x ++ " " ++ display y ++ " " ++ display m ++ ")"
---  display (ArbitrarilyAltered m) =
---    "(arbitrarily-altered " ++ display m ++ ")"
-
 push :: Int -> Assembly; push = emit . Push
 dup :: Int -> Assembly; dup = emit . Dup
 mstore :: Assembly; mstore = emit Mstore
