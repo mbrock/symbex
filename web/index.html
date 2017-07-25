@@ -1,5 +1,9 @@
 <!doctype html>
+<meta charset=utf-8>
 <title>Symbex: MULTISIG</title>
+<script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+<script src="https://fb.me/react-0.14.3.js"></script>
+<script src="https://fb.me/react-dom-0.14.3.js"></script>
 <style>
 body { background: #111; color: ivory; }
 html, body { font: 22px "fantasque sans mono"; }
@@ -7,30 +11,47 @@ div { border: 1px solid grey; }
 div { padding: 1px 4px; margin: 2px; margin-left: 10px; }
 div { display: flex; flex-direction: row; flex-wrap: wrap; }
 div { align-items: center; }
-div { border: 1px solid #333; border-radius: 12px; }
+div { border: 1px solid #333; }
 div { background: rgba(255,255,255,0.025); }
 div.body { flex-direction: column; align-items: flex-start; }
 .branch {
   border: none;
   background: transparent;
-  padding-top: 1rem;
-  padding-left: 2rem;
+  margin-bottom: .5rem;
+  border-left: 2px solid rgba(255, 255, 255, 0.5);
+  padding-left: .5rem;
 }
 .branch > :first-child {
   border: 2px solid rgba(100, 200, 250, 0.5);
+  margin: .5rem 0;
 }
 
-.branch > :nth-child(2):not(.open):not(.result) > * { display: none; }
-.branch > :nth-child(3):not(.open):not(.result) > * { display: none; }
-.branch > :nth-child(2):not(.open):not(.result):before { content: "true"; }
-.branch > :nth-child(3):not(.open):not(.result):before { content: "false"; }
-.branch > :nth-child(2):not(.open):not(.result):before { text-decoration: underline; }
-.branch > :nth-child(3):not(.open):not(.result):before { text-decoration: underline; }
+.annotation-value:not([data-open]) { display: none; }
+
+.branch > :nth-child(2):not([data-open]):not(.result) > * { display: none; }
+.branch > :nth-child(3):not([data-open]):not(.result) > * { display: none; }
+.branch > :nth-child(2):before { content: "if true:"; }
+.branch > :nth-child(3):before { content: "if false:"; }
+.branch > :nth-child(2):not([data-open]):not(.result):before { border-bottom: 1px solid currentcolor; }
+.branch > :nth-child(3):not([data-open]):not(.result):before { border-bottom: 1px solid currentcolor; }
+
+.annotation-name {
+  cursor: pointer;
+  font-family: helvetica, sans-serif;
+  opacity: 0.8;
+  color: lightgreen;
+  font-style: italic;
+  border: 2px outset darkgrey;
+  padding: 2px 8px;
+}
+
+.annotation-name[data-open] {
+  border-style: inset;
+}
 
 .result.Good { border: 3px solid green; }
 .result.Bad { border: 3px solid red; }
 </style>
 <script src=multisig.js></script>
-<script src=index.js></script>
+<script type=text/babel src=index.js></script>
 <div id=root></div>
-<script>draw(multisig, root)</script>

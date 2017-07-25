@@ -22,11 +22,11 @@ showPath (Path x (State { stack, memory, storage }) o) = do
   -- putStr "Memory:  "
   -- putStrLn (display memory)
   putStrLn "\nMemory:  "
-  putStrLn (display (rewriteBi (optimize :: Value -> Maybe Value) memory))
+  putStrLn (display (rewriteBi (optimize :: AValue -> Maybe AValue) memory))
   -- putStr "Storage: "
   -- putStrLn (display storage)
   putStrLn "\nStorage: "
-  putStrLn (display (rewriteBi (optimize :: Value -> Maybe Value) storage))
+  putStrLn (display (rewriteBi (optimize :: AValue -> Maybe AValue) storage))
   putStrLn ""
 
 emptyState :: State

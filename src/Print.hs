@@ -41,6 +41,10 @@ instance SDisplay Value where
   s (SetBit a b) = A "set-bit" ::: s a ::: s b ::: Nil
   s (IsBitSet a b) = A "bit-set?" ::: s a ::: s b ::: Nil
 
+instance SDisplay AValue where
+  s (As Nothing x) = s x
+  s (As (Just a) x) = L [A (show a), s x]
+
 instance SDisplay Memory where
   s Null = A "initial" ::: Nil
   s (With x y m) = L [A "set", s x, s y, s m]

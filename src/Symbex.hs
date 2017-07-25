@@ -6,28 +6,32 @@
 module Symbex where
 
 import Prelude hiding (not, and, or, exp)
-import Control.Monad.RWS (RWS, MonadFix, tell, get, modify, runRWS)
+import Control.Monad.State (get, modify, execState)
+import qualified Control.Monad.State as Monad
 import Data.Generics.Uniplate.Data
 import Data.Data (Data)
 import Data.Typeable (Typeable)
 import GHC.Generics
 import Data.Aeson (ToJSON ())
 
-newtype Assembler i a =
-  Assembler (RWS () [i] Int a)
-  deriving (Functor, Applicative, Monad, MonadFix)
-
+type Assembler i a = Monad.State ([i],Int) a
 type Assembly = Assembler Instr ()
 
-emit :: Instr -> Assembly
-emit x = Assembler (tell [x] >> modify succ)
+emit :: Instr' -> Assembly
+emit x = modify (\(xs, i) -> (Instr Nothing x : xs, succ i))
 
 assemble :: Assembly -> [Instr]
-assemble (Assembler x) = y
-  where ((), _, y) = runRWS x () 0
+assemble x = reverse (fst y)
+  where y = execState x ([], 0)
+
+as :: String -> Assembler Instr a -> Assembler Instr a
+as s m =
+  do r <- m
+     modify $ \(Instr _ x : xs, i) -> (Instr (Just s) x : xs, i)
+     return r
 
 label :: Assembler Instr Int
-label = Assembler get
+label = fmap snd get
 
 example :: [Instr]
 example = assemble $ mdo
@@ -40,66 +44,49 @@ example = assemble $ mdo
   y <- label; pop; push 11; stop
   z <- label; pop; push 12; stop
 
-multisig :: [Instr]
-multisig = assemble $ mdo
-  push 1; push 10; caller; eq; push confirm; jumpi; pop
-  push 2; push 11; caller; eq; push confirm; jumpi; pop
-  push 3; push 12; caller; eq; push confirm; jumpi; pop
-  push 4; push 13; caller; eq; push confirm; jumpi; pop
-  push 5; push 14; caller; eq; push confirm; jumpi; pop
-  push 6; push 15; caller; eq; push confirm; jumpi; pop
-  nope <- label; stop
-
-  confirm <- label
-  push 32; calldatasize; gt; push trigger; jumpi
-  push 0; calldataload; dup 1; sload
-  dup 1; dup 4; byte; push nope; jumpi
-  dup 1; push 0; mstore
-  push 0; byte; push 1; add; push 0; mstore8
-  push 1; swap 2; mstore8
-  push 0; mload; swap 1; sstore; stop
-
-  trigger <- label
-  calldatasize; push 0; push 0; calldatacopy
-  msize; push 0; keccak256
-  dup 1; sload; push 0; byte; push 2; gt; push nope; jumpi
-  push 0; mload; timestamp; gt; push nope; jumpi
-  push 255; not; swap 1; sstore
-  push 0; push 0; push 96; msize; sub; push 96
-  push 64; mload; push 32; mload
-  gaslimit; call
-
 multisig2 :: [Instr]
 multisig2 = assemble $ mdo
-  push 8; push 10; caller; eq; push confirm; jumpi; pop
-  push 9; push 11; caller; eq; push confirm; jumpi; pop
-  push 10; push 12; caller; eq; push confirm; jumpi; pop
-  push 11; push 13; caller; eq; push confirm; jumpi; pop
-  push 12; push 14; caller; eq; push confirm; jumpi; pop
-  push 13; push 15; caller; eq; push confirm; jumpi; pop
-  nope <- label; stop
 
-  confirm <- label
-  push 32; calldatasize; gt; push trigger; jumpi
-  push 0; calldataload; dup 1; sload
-  push 2; dup 4; exp
-  dup 1; dup 3; and; push nope; jumpi
+  let
+    allow s i j = do
+      as ("id of " ++ s)      (push i)
+      as ("address of " ++ s) (push j)
+      caller; eq; push confirm; jumpi; pop
+
+  allow "bob" 8 10
+  allow "pam" 9 11
+  allow "tom" 10 12
+  allow "ken" 11 13
+  allow "liz" 12 14
+  allow "joe" 13 15
+  nope <- as "nope" label; stop
+
+  confirm <- as "confirm" label
+  as "size of confirmation" (push 32); calldatasize; gt; push trigger; jumpi
+  push 0; as "action hash" calldataload; dup 1; as "old action state" sload
+  push 2; dup 4; as "confirmation flag" exp
+  dup 1; dup 3; as "user confirmation flag" and; push nope; jumpi
   dup 2; or
-  push 255; not; and
-  swap 1; push 255; and; push 1; add
-  or; swap 1; sstore; stop
+  push 255; not; as "new confirmations" and
+  swap 1; push 255; as "old confirmation count" and
+  push 1; as "new confirmation count" add
+  as "new action state" or; swap 1; sstore; stop
 
   trigger <- label
-  calldatasize; push 0; push 0; calldatacopy
-  calldatasize; push 0; keccak256
-  push 2; dup 2; sload; push 255; and; lt; push nope; jumpi
-  push 0; calldataload; timestamp; gt; push nope; jumpi
-  push 255; not; swap 1; sstore
+  calldatasize; push 0; push 0; as "full action" calldatacopy
+  calldatasize; push 0; as "action hash" keccak256
+  as "quorum" (push 2); dup 2; as "action state" sload;
+  push 255; as "confirmation count" and; lt; push nope; jumpi
+  push 0; as "deadline" calldataload; timestamp; gt; push nope; jumpi
+  push 255; as "triggered" not; swap 1; sstore
   push 0; push 0; push 96; calldatasize; sub; push 96
   push 64; calldataload; push 32; calldataload
   gaslimit; call; pop
 
-data Instr
+data Instr = Instr { instrAnnotation :: Maybe String, op :: Instr' }
+  deriving (Show, Generic)
+
+data Instr'
   = Push Int
   | Dup Int
   | Pop
@@ -132,8 +119,10 @@ data Instr
   | Exp
   deriving (Show, Generic)
 
+instance ToJSON Instr'
 instance ToJSON Instr
 instance ToJSON Value
+instance ToJSON AValue
 instance ToJSON Memory
 instance ToJSON State
 instance ToJSON Possibility
@@ -145,43 +134,49 @@ data Value
   = Actual Int
   | TheCaller
   | TheCalldatasize
-  | TheCalldataWord Value
+  | TheCalldataWord AValue
   | TheTimestamp
   | TheGaslimit
   | SomeCallResult
-  | TheByte Value Value
-  | SetByte Int Value Value
+  | TheByte AValue AValue
+  | SetByte Int AValue AValue
   | Size Memory
-  | Equality Value Value
-  | IsGreaterThan Value Value
-  | IsLessThan Value Value
-  | Negation Value
-  | Minus Value Value
-  | Plus Value Value
-  | TheHashOf Value Value Memory
-  | MemoryAt Value Memory
-  | StorageAt Value Memory
-  | Max Value Value
-  | Conjunction Value Value
-  | Disjunction Value Value
-  | Exponentiation Value Value
-  | SetBit Value Value
-  | IsBitSet Value Value
+  | Equality AValue AValue
+  | IsGreaterThan AValue AValue
+  | IsLessThan AValue AValue
+  | Negation AValue
+  | Minus AValue AValue
+  | Plus AValue AValue
+  | TheHashOf AValue AValue Memory
+  | MemoryAt AValue Memory
+  | StorageAt AValue Memory
+  | Max AValue AValue
+  | Conjunction AValue AValue
+  | Disjunction AValue AValue
+  | Exponentiation AValue AValue
+  | SetBit AValue AValue
+  | IsBitSet AValue AValue
   deriving (Show, Eq, Data, Typeable, Generic)
 
-dependsOnCall :: Value -> Bool
-dependsOnCall = elem SomeCallResult . universe
+data AValue = As
+  { annotation :: Maybe String
+  , value :: Value
+  }
+  deriving (Show, Eq, Data, Typeable, Generic)
+
+dependsOnCall :: AValue -> Bool
+dependsOnCall = elem SomeCallResult . universe . value
 
 type PC = Int
-type Stack = [Value]
+type Stack = [AValue]
 type Code = [Instr]
 
 data Memory
   = Null
-  | With Value Value Memory
-  | WithByte Value Value Memory
-  | WithCalldata (Value, Value, Value) Memory
-  | WithCallResult (Value, Value) Memory
+  | With AValue AValue Memory
+  | WithByte AValue AValue Memory
+  | WithCalldata (AValue, AValue, AValue) Memory
+  | WithCallResult (AValue, AValue) Memory
   | ArbitrarilyAltered Memory
   deriving (Show, Eq, Data, Typeable, Generic)
 
@@ -194,7 +189,7 @@ data State = State
 
 data Possibility
   = Step State
-  | Fork Value State State
+  | Fork AValue State State
   | StackUnderrun Instr
   | Done
   deriving (Show, Generic)
@@ -203,18 +198,19 @@ exec :: State -> Code -> Possibility
 exec (State { pc }) c | pc >= length c =
   Done
 exec (state @ State { stack, pc, memory, storage }) c =
-  case c !! pc of
+  let a = instrAnnotation (c !! pc)
+  in case op (c !! pc) of
     Stop ->
       Done
 
     Push x ->
       Step $ state
-        { stack = Actual x : stack
+        { stack = As a (Actual x) : stack
         , pc = succ pc }
 
     Jumpi ->
       case stack of
-        (Actual j : x : stack') ->
+        (As _ (Actual j) : x : stack') ->
           Fork x
             (state { stack = stack', pc = j })
             (state { stack = stack', pc = succ pc })
@@ -256,14 +252,14 @@ exec (state @ State { stack, pc, memory, storage }) c =
 
     Caller ->
       Step $ state
-        { stack = TheCaller : stack
+        { stack = As a TheCaller : stack
         , pc = succ pc }
 
     Eq ->
       case stack of
         (x:y:stack') ->
           Step $ state
-            { stack = Equality x y : stack'
+            { stack = As a (Equality x y) : stack'
             , pc = succ pc }
         _ ->
           StackUnderrun (c !! pc)
@@ -292,7 +288,7 @@ exec (state @ State { stack, pc, memory, storage }) c =
       case stack of
         (x:stack') ->
           Step $ state
-            { stack = MemoryAt x memory : stack'
+            { stack = As a (MemoryAt x memory) : stack'
             , pc = succ pc }
         _ ->
           StackUnderrun (c !! pc)
@@ -311,21 +307,21 @@ exec (state @ State { stack, pc, memory, storage }) c =
       case stack of
         (x:stack') ->
           Step $ state
-            { stack = StorageAt x storage : stack'
+            { stack = As a (StorageAt x storage) : stack'
             , pc = succ pc }
         _ ->
           StackUnderrun (c !! pc)
 
     Calldatasize ->
       Step $ state
-        { stack = TheCalldatasize : stack
+        { stack = As a TheCalldatasize : stack
         , pc = succ pc }
 
     Gt ->
       case stack of
         (x:y:stack') ->
           Step $ state
-            { stack = (x `IsGreaterThan` y) : stack'
+            { stack = As a (x `IsGreaterThan` y) : stack'
             , pc = succ pc }
         _ ->
           StackUnderrun (c !! pc)
@@ -334,7 +330,7 @@ exec (state @ State { stack, pc, memory, storage }) c =
       case stack of
         (x:y:stack') ->
           Step $ state
-            { stack = (x `IsLessThan` y) : stack'
+            { stack = As a (x `IsLessThan` y) : stack'
             , pc = succ pc }
         _ ->
           StackUnderrun (c !! pc)
@@ -343,7 +339,7 @@ exec (state @ State { stack, pc, memory, storage }) c =
       case stack of
         (x:stack') ->
           Step $ state
-            { stack = (TheCalldataWord x) : stack'
+            { stack = As a (TheCalldataWord x) : stack'
             , pc = succ pc }
         _ -> StackUnderrun (c !! pc)
 
@@ -351,7 +347,7 @@ exec (state @ State { stack, pc, memory, storage }) c =
       case stack of
         (i:x:stack') ->
           Step $ state
-            { stack = (TheByte i x) : stack'
+            { stack = As a (TheByte i x) : stack'
             , pc = succ pc }
         _ -> StackUnderrun (c !! pc)
 
@@ -367,32 +363,32 @@ exec (state @ State { stack, pc, memory, storage }) c =
 
     Msize ->
       Step $ state
-        { stack = (Size memory) : stack
+        { stack = As a (Size memory) : stack
         , pc = succ pc }
 
     Keccak256 ->
       case stack of
         (xOffset:xSize:stack') ->
           Step $ state
-            { stack = (TheHashOf xOffset xSize memory) : stack'
+            { stack = As a (TheHashOf xOffset xSize memory) : stack'
             , pc = succ pc }
         _ -> StackUnderrun (c !! pc)
 
     Timestamp ->
       Step $ state
-        { stack = TheTimestamp : stack
+        { stack = As a TheTimestamp : stack
         , pc = succ pc }
 
     Gaslimit ->
       Step $ state
-        { stack = TheGaslimit : stack
+        { stack = As a TheGaslimit : stack
         , pc = succ pc }
 
     Sub ->
       case stack of
         (x:y:stack') ->
           Step $ state
-            { stack = (Minus y x) : stack'
+            { stack = As a (Minus y x) : stack'
             , pc = succ pc }
         _ -> StackUnderrun (c !! pc)
 
@@ -400,7 +396,7 @@ exec (state @ State { stack, pc, memory, storage }) c =
       case stack of
         (x:y:stack') ->
           Step $ state
-            { stack = (Plus y x) : stack'
+            { stack = As a (Plus y x) : stack'
             , pc = succ pc }
         _ -> StackUnderrun (c !! pc)
 
@@ -408,7 +404,7 @@ exec (state @ State { stack, pc, memory, storage }) c =
       case stack of
         (x:y:stack') ->
           Step $ state
-            { stack = (Exponentiation y x) : stack'
+            { stack = As a (Exponentiation y x) : stack'
             , pc = succ pc }
         _ -> StackUnderrun (c !! pc)
 
@@ -416,7 +412,7 @@ exec (state @ State { stack, pc, memory, storage }) c =
       case stack of
         (x:y:stack') ->
           Step $ state
-            { stack = (Conjunction y x) : stack'
+            { stack = As a (Conjunction y x) : stack'
             , pc = succ pc }
         _ -> StackUnderrun (c !! pc)
 
@@ -424,7 +420,7 @@ exec (state @ State { stack, pc, memory, storage }) c =
       case stack of
         (x:y:stack') ->
           Step $ state
-            { stack = (Disjunction y x) : stack'
+            { stack = As a (Disjunction y x) : stack'
             , pc = succ pc }
         _ -> StackUnderrun (c !! pc)
 
@@ -432,20 +428,20 @@ exec (state @ State { stack, pc, memory, storage }) c =
       case stack of
         (_:_xTo:_xValue:_xInOffset:_xInSize:xOutOffset:xOutSize:stack') -> do
           Step $ (state
-              { stack = Actual 1 : stack'
+              { stack = As a (Actual 1) : stack'
               , pc = succ pc
               , memory = WithCallResult (xOutOffset, xOutSize) memory
               , storage = ArbitrarilyAltered storage
               })
           -- Fork (SomeCallResult)
           --   (state
-          --     { stack = Actual 1 : stack'
+          --     { stack = As a (Actual 1) : stack'
           --     , pc = succ pc
           --     , memory = WithCallResult (xOutOffset, xOutSize) memory
           --     , storage = ArbitrarilyAltered storage
           --     })
           --   (state
-          --     { stack = Actual 0 : stack'
+          --     { stack = As a (Actual 0) : stack'
           --     , pc = succ pc
           --     })
         _ -> StackUnderrun (c !! pc)
@@ -453,7 +449,7 @@ exec (state @ State { stack, pc, memory, storage }) c =
       case stack of
         (x:stack') ->
           Step $ state
-            { stack = (Negation x) : stack'
+            { stack = As a (Negation x) : stack'
             , pc = succ pc }
         _ -> StackUnderrun (c !! pc)
 
@@ -462,10 +458,10 @@ exec (state @ State { stack, pc, memory, storage }) c =
 data Outcome = Good | Bad String
   deriving (Show, Generic)
 
-data Path = Path [Value] State Outcome
+data Path = Path [AValue] State Outcome
   deriving Generic
 
-data Tree = One State Outcome | Two Value Tree Tree
+data Tree = One State Outcome | Two AValue Tree Tree
   deriving Generic
 
 step' :: Code -> State -> Tree
@@ -485,7 +481,7 @@ step c state =
     Step s' -> step c s'
     Fork p s1 s2 ->
       map (\(Path ps s' o) -> Path (p : ps) s' o) (step c s1)
-        ++ map (\(Path ps s' o) -> Path ((Negation p) : ps) s' o) (step c s2)
+        ++ map (\(Path ps s' o) -> Path (As Nothing (Negation p) : ps) s' o) (step c s2)
 
 pathDoesCall :: Path -> Bool
 pathDoesCall (Path x _ _) = any dependsOnCall x
@@ -498,37 +494,37 @@ memorySize = \case
   Null ->
     Actual 0
   WithCalldata (n, _, dst) m ->
-    (Max (memorySize m) ((Plus dst n)))
+    Max (As Nothing (memorySize m)) (As Nothing (Plus dst n))
   x ->
-    (Size x)
+    Size x
 
-instance Optimize Value where
-  optimize = \case
-    (Size x) -> Just (memorySize x)
-    (Max (Actual 0) x) -> Just x
-    (Plus (Actual 0) x) -> Just x
-    (MemoryAt x mem) -> resolveMemory x mem
-    (Disjunction ((Exponentiation (Actual 2) (Actual x))) y) ->
-      Just ((SetBit (Actual (x + 1)) y))
-    (Conjunction ((Exponentiation (Actual 2) (Actual x))) y) ->
-      Just ((IsBitSet (Actual (x + 1)) y))
+instance Optimize AValue where
+  optimize (As a instr) = case instr of
+    Size x -> Just (As a (memorySize x))
+    Max (As _ (Actual 0)) x -> Just x
+    Plus (As _ (Actual 0)) x -> Just x
+    MemoryAt x mem -> resolveMemory a x mem
+    Disjunction (As _ (Exponentiation (As _ (Actual 2)) (As _ (Actual x)))) y ->
+      Just (As a (SetBit (As Nothing (Actual (x + 1))) y))
+    Conjunction (As _ (Exponentiation (As _ (Actual 2)) (As _ (Actual x)))) y ->
+      Just (As a (IsBitSet (As Nothing (Actual (x + 1))) y))
     _ -> Nothing
 
-resolveMemory :: Value -> Memory -> Maybe Value
-resolveMemory _ Null = Just (Actual 0)
-resolveMemory x (With y z m) =
-  if x == y then Just z else resolveMemory x m
-resolveMemory (Actual i) (WithByte (Actual j) z m) =
+resolveMemory :: Maybe String -> AValue -> Memory -> Maybe AValue
+resolveMemory a _ Null = Just (As a (Actual 0))
+resolveMemory a x (With y z m) =
+  if value x == value y then Just z else resolveMemory a x m
+resolveMemory a (As _ (Actual i)) (WithByte (As _ (Actual j)) z m) =
   if i == div j 32
   then
     -- We have information about one byte of the requested word.
-    case resolveMemory (Actual i) m of
+    case resolveMemory a (As Nothing (Actual i)) m of
       Nothing -> Nothing
-      Just x' -> Just ((SetByte j z x'))
+      Just (As a' x') -> Just (As Nothing (SetByte j z (As a' x')))
   else
     -- This byte is unrelated to the requested word.
-    resolveMemory (Actual i) m
-resolveMemory _ _ = Nothing
+    resolveMemory a (As Nothing (Actual i)) m
+resolveMemory _ _ _ = Nothing
 
 isArbitrarilyAltered :: Memory -> Bool
 isArbitrarilyAltered m =
