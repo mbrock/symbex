@@ -59,13 +59,13 @@ multisig2 = assemble $ mdo
   allow "ken" 11 13
   allow "liz" 12 14
   allow "joe" 13 15
-  nope <- as "nope" label; stop
+  nope <- label; stop
 
-  confirm <- as "confirm" label
+  confirm <- label
   as "size of confirmation" (push 32); calldatasize; gt; push trigger; jumpi
   push 0; as "action hash" calldataload; dup 1; as "old action state" sload
-  push 2; dup 4; as "confirmation flag" exp
-  dup 1; dup 3; as "user confirmation flag" and; push nope; jumpi
+  push 2; dup 4; as "confirmation flag bitmask" exp
+  dup 1; dup 3; as "confirmation flag" and; push nope; jumpi
   dup 2; or
   push 255; not; as "new confirmations" and
   swap 1; push 255; as "old confirmation count" and
