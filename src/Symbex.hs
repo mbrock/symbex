@@ -62,12 +62,12 @@ multisig2 = assemble $ mdo
   nope <- label; stop
 
   confirm <- label
-  as "size of confirmation" (push 32); calldatasize; gt; push trigger; jumpi
+  as "size of action hash" (push 32); calldatasize; gt; push trigger; jumpi
   push 0; as "action hash" calldataload; dup 1; as "old action state" sload
   push 2; dup 4; as "confirmation flag bitmask" exp
-  dup 1; dup 3; as "confirmation flag" and; push nope; jumpi
+  dup 1; dup 3; as "user confirmation bit" and; push nope; jumpi
   dup 2; or
-  push 255; not; as "new confirmations" and
+  push 255; not; as "new confirmation state" and
   swap 1; push 255; as "old confirmation count" and
   push 1; as "new confirmation count" add
   as "new action state" or; swap 1; sstore; stop
@@ -78,7 +78,7 @@ multisig2 = assemble $ mdo
   as "quorum" (push 2); dup 2; as "action state" sload;
   push 255; as "confirmation count" and; lt; push nope; jumpi
   push 0; as "deadline" calldataload; timestamp; gt; push nope; jumpi
-  push 255; as "triggered" not; swap 1; sstore
+  push 255; as "trigger state" not; swap 1; sstore
   push 0; push 0; push 96; calldatasize; sub; push 96
   push 64; calldataload; push 32; calldataload
   gaslimit; call; pop
