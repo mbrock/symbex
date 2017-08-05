@@ -2,6 +2,8 @@
 
 module Main where
 
+import System.Environment (getArgs)
+
 import Symbex
 import Print
 
@@ -50,5 +52,21 @@ showPaths = mapM_ f . zip [1..]
       showPath x
 
 main :: IO ()
-main = --showPaths (run multisig2)
-  B8.putStrLn . encode $ step' multisig2 emptyState
+main = do
+  xs <- getArgs
+  let
+    (json, xs') =
+      case xs of
+        ("--json":_) -> (True, tail xs)
+        _ -> (False, xs)
+    thing =
+      case xs' of
+        ["weth"] -> weth
+        ["multisig"] -> multisig2
+        _ -> error "wtf"
+
+  if json
+    then
+      B8.putStrLn . encode $ step' thing emptyState
+    else
+      showPaths (run thing)

@@ -11,12 +11,13 @@ class SDisplay a where
 display :: SDisplay a => a -> String
 display = unpack . encodeOne (basicPrint pack) . s
 
-instance SDisplay Int where
+instance SDisplay Integer where
   s = A . show
 
 instance SDisplay Value where
   s (Actual x) = A (show x)
   s TheCaller = A "caller" ::: Nil
+  s TheCallvalue = A "callvalue" ::: Nil
   s TheCalldatasize = A "calldatasize" ::: Nil
   s TheTimestamp = A "timestamp" ::: Nil
   s TheGaslimit = A "gaslimit" ::: Nil
@@ -28,6 +29,8 @@ instance SDisplay Value where
   s (Minus a b) = A "-" ::: s a ::: s b ::: Nil
   s (Plus a b) = A "+" ::: s a ::: s b ::: Nil
   s (a `IsGreaterThan` b) = A ">" ::: s a ::: s b ::: Nil
+  s (a `DividedBy` b) = A "div" ::: s a ::: s b ::: Nil
+  s (IsZero a) = A "iszero" ::: s a ::: Nil
   s (Negation a) = A "not" ::: s a ::: Nil
   s (Size a) = A "size" ::: s a ::: Nil
   s (TheHashOf a b m) = A "keccak256" ::: s a ::: s b ::: s m ::: Nil

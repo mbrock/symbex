@@ -105,6 +105,6 @@ let render = (x, container) => {
   ReactDOM.render(draw(x, ""), container)
 }
 
-let redraw = () => render(multisig, root)
+let redraw = () => render(weth, root)
 
 redraw()
