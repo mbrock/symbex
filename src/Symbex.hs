@@ -15,16 +15,22 @@ import Data.Data (Data)
 import Data.Typeable (Typeable)
 import GHC.Generics
 import Data.Aeson (ToJSON ())
+import Data.Word
+import Data.List (unfoldr, mapAccumL)
+import Data.Bits
 
-type Assembler i a = Monad.State ([i],Integer) a
+type Assembler i a = Monad.State ([i], Integer) a
 type Assembly = Assembler Instr ()
 
 emit :: Instr' -> Assembly
-emit x = modify (\(xs, i) -> (Instr Nothing x : xs, succ i))
+emit x =
+  modify $
+    \(xs, i) ->
+      (Instr Nothing x : xs, succ i)
 
 assemble :: Assembly -> [Instr]
-assemble x = reverse (fst y)
-  where y = execState x ([], 0)
+assemble x = reverse y
+  where (y, _) = execState x ([], 0)
 
 as :: String -> Assembler Instr a -> Assembler Instr a
 as s m =
@@ -37,15 +43,21 @@ as s m =
 
 infix 0 ?
 
-label :: Assembler Instr Integer
-label = do x <- fmap snd get; emit Jumpdest; pure x
+data Label = Label Integer
+  deriving (Show, Generic)
+
+label :: Assembler Instr Label
+label = do
+  (_, i) <- get
+  emit Jumpdest
+  pure (Label i)
 
 example :: [Instr]
 example = assemble $ mdo
   caller
-  dup 1; push 1; eq; push x; swap 1; jumpi
-  dup 1; push 2; eq; push y; swap 1; jumpi
-  dup 1; push 3; eq; push z; swap 1; jumpi
+  dup 1; push 1; eq; refer x; swap 1; jumpi
+  dup 1; push 2; eq; refer y; swap 1; jumpi
+  dup 1; push 3; eq; refer z; swap 1; jumpi
   pop; push 0; push 1; mstore; push 0; mload; stop
   x <- label; pop; push 10; stop
   y <- label; pop; push 11; stop
@@ -58,7 +70,7 @@ multisig2 = assemble $ mdo
     allow s i j = do
       as ("id of " ++ s)      (push i)
       as ("address of " ++ s) (push j)
-      caller; eq; push confirm; jumpi; pop
+      caller; eq; refer confirm; jumpi; pop
 
   allow "bob" 8 10
   allow "pam" 9 11
@@ -69,10 +81,10 @@ multisig2 = assemble $ mdo
   nope <- label; stop
 
   confirm <- label
-  as "size of action hash" (push 32); calldatasize; gt; push trigger; jumpi
+  as "size of action hash" (push 32); calldatasize; gt; refer trigger; jumpi
   push 0; as "action hash" calldataload; dup 1; as "old action state" sload
   push 2; dup 4; as "confirmation flag bitmask" exp
-  dup 1; dup 3; as "user confirmation bit" and; push nope; jumpi
+  dup 1; dup 3; as "user confirmation bit" and; refer nope; jumpi
   dup 2; or
   push 255; not; as "new confirmation state" and
   swap 1; push 255; as "old confirmation count" and
@@ -83,8 +95,8 @@ multisig2 = assemble $ mdo
   calldatasize; push 0; push 0; as "full action" calldatacopy
   calldatasize; push 0; as "action hash" keccak256
   as "quorum" (push 2); dup 2; as "action state" sload;
-  push 255; as "confirmation count" and; lt; push nope; jumpi
-  push 0; as "deadline" calldataload; timestamp; gt; push nope; jumpi
+  push 255; as "confirmation count" and; lt; refer nope; jumpi
+  push 0; as "deadline" calldataload; timestamp; gt; refer nope; jumpi
   push 255; as "trigger state" not; swap 1; sstore
   push 0; push 0; push 96; calldatasize; sub; push 96
   push 64; calldataload; push 32; calldataload
@@ -95,6 +107,7 @@ data Instr = Instr { instrAnnotation :: Maybe String, op :: Instr' }
 
 data Instr'
   = Push Integer
+  | PushLabel Label
   | Dup Int
   | Pop
   | Swap Int
@@ -134,6 +147,7 @@ data Instr'
   | Jumpdest
   deriving (Show, Generic)
 
+instance ToJSON Label
 instance ToJSON Instr'
 instance ToJSON Instr
 instance ToJSON Value
@@ -229,6 +243,11 @@ exec (state @ State { stack, pc, memory, storage }) c =
         { pc = succ pc }
 
     Push x ->
+      Step $ state
+        { stack = As a (Actual x) : stack
+        , pc = succ pc }
+
+    PushLabel (Label x) ->
       Step $ state
         { stack = As a (Actual x) : stack
         , pc = succ pc }
@@ -619,6 +638,7 @@ isArbitrarilyAltered m =
     ArbitrarilyAltered _ -> True
 
 push :: Integer -> Assembly; push = emit . Push
+refer :: Label -> Assembly; refer = emit . PushLabel
 dup :: Int -> Assembly; dup = emit . Dup
 mstore :: Assembly; mstore = emit Mstore
 mstore8 :: Assembly; mstore8 = emit Mstore8
@@ -655,3 +675,85 @@ jump :: Assembly; jump = emit Jump
 revert :: Assembly; revert = emit Revert
 callvalue :: Assembly; callvalue = emit Callvalue
 log :: Int -> Assembly; log = emit . Log
+
+unroll :: Integer -> [Word8]
+unroll = unfoldr f
+  where
+    f 0 = Nothing
+    f i = Just (fromIntegral i, i `shiftR` 8)
+
+pad :: Int -> a -> [a] -> [a]
+pad n x xs =
+  if length xs > n
+  then error "too big"
+  else replicate (length xs - n) x ++ xs
+
+compile :: [Instr] -> [Word8]
+compile xs =
+  let
+    pass1 :: [Pass1]
+    pass1 = map (compile1 . op) xs
+
+    pass2 :: [Int]
+    pass2 = snd (mapAccumL f 0 pass1)
+      where
+        f i (Bytecode code) = (i + length code, i)
+        f i (Unresolved _)  = (i + 3, i)
+
+    stupid :: Pass1 -> [Word8]
+    stupid (Bytecode code) = code
+    stupid (Unresolved i) =
+      0x62 : pad 2 0 (unroll (fromIntegral (pass2 !! i)))
+  in
+    concatMap stupid pass1
+
+data Pass1 = Bytecode [Word8] | Unresolved Int
+
+compile1 :: Instr' -> Pass1
+compile1 = \case
+  Push x ->
+    let
+      bytes = unroll x
+      count = length bytes
+    in
+      if count == 0
+      then Bytecode [0x60, 0]
+      else Bytecode $ fromIntegral (0x60 + count - 1) : bytes
+  PushLabel (Label x) -> Unresolved (fromIntegral x)
+  Dup x -> Bytecode [fromIntegral $ 0x80 + x - 1]
+  Swap x -> Bytecode [fromIntegral $ 0x90 + x - 1]
+  Log x -> Bytecode [fromIntegral $ 0xa0 + x]
+  Pop -> Bytecode [0x50]
+  Caller -> Bytecode [0x33]
+  Eq -> Bytecode [0x14]
+  Jumpi -> Bytecode [0x57]
+  Stop -> Bytecode [0x00]
+  Mstore -> Bytecode [0x52]
+  Mstore8 -> Bytecode [0x53]
+  Mload -> Bytecode [0x51]
+  Calldatasize -> Bytecode [0x36]
+  Gt -> Bytecode [0x11]
+  Lt -> Bytecode [0x10]
+  Calldataload -> Bytecode [0x35]
+  Sload -> Bytecode [0x54]
+  Sstore -> Bytecode [0x55]
+  Byte -> Bytecode [0x1a]
+  Calldatacopy -> Bytecode [0x37]
+  Msize -> Bytecode [0x59]
+  Keccak256 -> Bytecode [0x20]
+  Timestamp -> Bytecode [0x42]
+  Gaslimit -> Bytecode [0x45]
+  Call -> Bytecode [0xf1]
+  Sub -> Bytecode [0x03]
+  Add -> Bytecode [0x01]
+  Not -> Bytecode [0x19]
+  And -> Bytecode [0x16]
+  Or -> Bytecode [0x17]
+  Exp -> Bytecode [0x0a]
+  Callvalue -> Bytecode [0x34]
+  Iszero -> Bytecode [0x15]
+  Div -> Bytecode [0x04]
+  Revert -> Bytecode [0xfd]
+  Return -> Bytecode [0xf3]
+  Jump -> Bytecode [0x56]
+  Jumpdest -> Bytecode [0x5b]

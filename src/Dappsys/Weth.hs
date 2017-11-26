@@ -11,10 +11,10 @@ weth = assemble $ mdo
   let
     addsafe = do
       dup 1; swap 2; add; dup 1; swap 2
-      lt ? "overflow"; push fail; jumpi
+      lt ? "overflow"; refer fail; jumpi
   
   -- Skip deposit if no value sent
-  callvalue; iszero; push dispatch; jumpi
+  callvalue; iszero; refer dispatch; jumpi
 
   -- Calculate new total supply
   push 1; not ? "total supply slot"; sload ? "total supply"; callvalue; addsafe
@@ -37,13 +37,13 @@ weth = assemble $ mdo
   dispatch <- label ? "dispatch"
   push 0; calldataload; push 224; push 2; exp; div ? "signature"
 
-  dup 1; push 0x23b872dd ? "transferFrom"; eq; push transferFrom; jumpi
-  dup 1; push 0x095ea7b3 ? "approve"; eq; push approve; jumpi
-  dup 1; push 0x2e1a7d4d ? "withdraw"; eq; push withdraw; jumpi
-  dup 1; push 0x70a08231 ? "balanceOf"; eq; push balanceOf; jumpi
-  dup 1; push 0x18160ddd ? "totalSupply"; eq; push totalSupply; jumpi
-  dup 1; push 0xdd62ed3e ? "allowance"; eq; push allowance; jumpi
-  dup 1; push 0xa9059cbb ? "transfer"; eq; push transfer; jumpi
+  dup 1; push 0x23b872dd ? "transferFrom"; eq; refer transferFrom; jumpi
+  dup 1; push 0x095ea7b3 ? "approve"; eq; refer approve; jumpi
+  dup 1; push 0x2e1a7d4d ? "withdraw"; eq; refer withdraw; jumpi
+  dup 1; push 0x70a08231 ? "balanceOf"; eq; refer balanceOf; jumpi
+  dup 1; push 0x18160ddd ? "totalSupply"; eq; refer totalSupply; jumpi
+  dup 1; push 0xdd62ed3e ? "allowance"; eq; refer allowance; jumpi
+  dup 1; push 0xa9059cbb ? "transfer"; eq; refer transfer; jumpi
 
   fail <- label ? "fail"
   revert
@@ -84,7 +84,7 @@ weth = assemble $ mdo
   transfer <- label ? "transfer"
   push 36; calldataload ? "value to be transferred"
   push 4;  calldataload ? "recipient"
-  caller; push attemptTransfer; jump
+  caller; refer attemptTransfer; jump
 
   transferFrom <- label ? "transferFrom"
   push 68 ; calldataload ? "value to be transferred"
@@ -94,16 +94,16 @@ weth = assemble $ mdo
   attemptTransfer <- label ? "attemptTransfer"
 
   -- Abort if garbage in addresses
-  push 160; push 2; exp; dup 3; dup 3; or; div; push fail; jumpi
+  push 160; push 2; exp; dup 3; dup 3; or; div; refer fail; jumpi
 
   -- Load source and target balances
   dup 2; sload ? "target balance"; dup 2; sload ? "source balance"
 
   -- Abort if insufficient balance
-  dup 5; dup 2; lt; push fail; jumpi
+  dup 5; dup 2; lt; refer fail; jumpi
 
   -- Skip ahead if source is caller
-  dup 3; caller; eq; push performTransfer; jumpi
+  dup 3; caller; eq; refer performTransfer; jumpi
   dup 3; push 0; mstore; caller; push 32; mstore
 
   -- Determine allowance storage slot
@@ -114,10 +114,10 @@ weth = assemble $ mdo
 
   -- Skip ahead if allowance is max
   push 1; not ? "infinite allowance symbol"; dup 2
-  eq; push performTransfer; jumpi
+  eq; refer performTransfer; jumpi
 
   -- Abort if allowance is too low
-  dup 7; dup 2; lt; push fail; jumpi
+  dup 7; dup 2; lt; refer fail; jumpi
 
   -- Save new allowance to storage
   dup 7; swap 2; sub; swap 2; sstore
@@ -169,7 +169,7 @@ weth = assemble $ mdo
   dup 2; dup 2; sub
 
   -- Abort if underflow occurred
-  dup 2; swap 1; gt; push fail; jumpi
+  dup 2; swap 1; gt; refer fail; jumpi
 
   -- Save new source balance to storage
   caller; sstore
@@ -190,7 +190,7 @@ weth = assemble $ mdo
   dup 5; caller
 
   -- Make call, aborting on failure
-  gaslimit; call; iszero; push fail; jumpi
+  gaslimit; call; iszero; refer fail; jumpi
 
   -- Emit `Withdrawal(address indexed, uint)'
   push 0x7fcf532c15f0a6db0bd6d0e038bea71d30d808c7d98cb3bf7268a95bf5081b65

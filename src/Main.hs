@@ -14,6 +14,8 @@ import Data.Generics.Uniplate.Data
 import Data.Aeson (encode)
 import qualified Data.ByteString.Lazy.Char8 as B8
 
+import Text.Printf
+
 showPath :: Path -> IO ()
 showPath (Path x (State { storage }) o) = do
   putStrLn $ "** Conditions"
@@ -52,19 +54,24 @@ showPaths = mapM_ f . zip [1..]
 main :: IO ()
 main = do
   xs <- getArgs
-  let
-    (json, xs') =
-      case xs of
-        ("--json":_) -> (True, tail xs)
-        _ -> (False, xs)
-    thing =
-      case xs' of
-        ["weth"] -> weth
-        ["multisig"] -> multisig2
-        _ -> error "wtf"
+  case xs of
+    ["--bytecode", "weth"] -> do
+      mapM_ (printf "%02x") (compile weth)
+      putStrLn ""
+    _ -> do
+      let
+        (json, xs') =
+          case xs of
+            ("--json":_) -> (True, tail xs)
+            _ -> (False, xs)
+        thing =
+          case xs' of
+            ["weth"] -> weth
+            ["multisig"] -> multisig2
+            _ -> error "wtf"
 
-  if json
-    then
-      B8.putStrLn . encode $ step' thing emptyState
-    else
-      showPaths (run thing)
+      if json
+        then
+          B8.putStrLn . encode $ step' thing emptyState
+        else
+          showPaths (run thing)
