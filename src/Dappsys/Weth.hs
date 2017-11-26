@@ -8,17 +8,22 @@ import Symbex
 weth :: [Instr]
 weth = assemble $ mdo
 
+  let
+    addsafe = do
+      dup 1; swap 2; add; dup 1; swap 2
+      lt ? "overflow"; push fail; jumpi
+  
   -- Skip deposit if no value sent
   callvalue; iszero; push dispatch; jumpi
 
   -- Calculate new total supply
-  push 1; not ? "total supply slot"; sload ? "total supply"; callvalue; add
+  push 1; not ? "total supply slot"; sload ? "total supply"; callvalue; addsafe
 
   -- Save new total supply to storage
   push 1; not ? "total supply slot"; sstore
 
   -- Calculate new target balance
-  caller; sload ? "old target balance"; callvalue; add
+  caller; sload ? "old target balance"; callvalue; addsafe
 
   -- Save new target balance to storage
   caller; sstore
@@ -123,7 +128,7 @@ weth = assemble $ mdo
   dup 5; swap 3; sub; dup 3; sstore
 
   -- Save target balance to storage
-  dup 4; swap 2; add; dup 3; sstore
+  dup 4; swap 2; addsafe; dup 3; sstore
 
   -- Emit `Transfer(address indexed, address indexed, uint)'
   push 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
