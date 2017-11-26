@@ -1,0 +1,2324 @@
+* Path 1
+
+** Conditions
+(iszero (callvalue))
+(eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0))))
+(div (or ("to" (calldataload 36)) ("from" (calldataload 4))) (exp 160 2))
+
+** Outcome Bad "reverted"
+
+** Storage
+(initial)
+
+* Path 2
+
+** Conditions
+(iszero (callvalue))
+(eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0))))
+(not (div (or ("to" (calldataload 36)) ("from" (calldataload 4))) (exp 160 2)))
+(< 
+  ("source balance" (sload ("from" (calldataload 4)) (initial)))
+  ("value to be transferred" (calldataload 68)))
+
+** Outcome Bad "reverted"
+
+** Storage
+(initial)
+
+* Path 3
+
+** Conditions
+(iszero (callvalue))
+(eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0))))
+(not (div (or ("to" (calldataload 36)) ("from" (calldataload 4))) (exp 160 2)))
+(not 
+  (< 
+    ("source balance" (sload ("from" (calldataload 4)) (initial)))
+    ("value to be transferred" (calldataload 68))))
+(eq? (caller) ("from" (calldataload 4)))
+
+** Outcome Good
+
+** Storage
+(set 
+  ("to" (calldataload 36))
+  (+ 
+    ("value to be transferred" (calldataload 68))
+    ("target balance" (sload ("to" (calldataload 36)) (initial))))
+  (set 
+    ("target balance" (sload ("to" (calldataload 36)) (initial)))
+    (- ("value to be transferred" (calldataload 68)) ("from" (calldataload 4)))
+    (initial)))
+
+* Path 4
+
+** Conditions
+(iszero (callvalue))
+(eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0))))
+(not (div (or ("to" (calldataload 36)) ("from" (calldataload 4))) (exp 160 2)))
+(not 
+  (< 
+    ("source balance" (sload ("from" (calldataload 4)) (initial)))
+    ("value to be transferred" (calldataload 68))))
+(not (eq? (caller) ("from" (calldataload 4))))
+(eq? 
+  ("allowance" 
+    (sload 
+      (keccak256 0 32 (set 32 (caller) (set 0 ("from" (calldataload 4)) (initial))))
+      (initial)))
+  ("infinite allowance symbol" (not 1)))
+
+** Outcome Good
+
+** Storage
+(set 
+  ("target balance" (sload ("to" (calldataload 36)) (initial)))
+  (+ 
+    ("from" (calldataload 4))
+    (keccak256 0 32 (set 32 (caller) (set 0 ("from" (calldataload 4)) (initial)))))
+  (set 
+    (keccak256 0 32 (set 32 (caller) (set 0 ("from" (calldataload 4)) (initial))))
+    (- 
+      ("from" (calldataload 4))
+      ("source balance" (sload ("from" (calldataload 4)) (initial))))
+    (initial)))
+
+* Path 5
+
+** Conditions
+(iszero (callvalue))
+(eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0))))
+(not (div (or ("to" (calldataload 36)) ("from" (calldataload 4))) (exp 160 2)))
+(not 
+  (< 
+    ("source balance" (sload ("from" (calldataload 4)) (initial)))
+    ("value to be transferred" (calldataload 68))))
+(not (eq? (caller) ("from" (calldataload 4))))
+(not 
+  (eq? 
+    ("allowance" 
+      (sload 
+        (keccak256 0 32 (set 32 (caller) (set 0 ("from" (calldataload 4)) (initial))))
+        (initial)))
+    ("infinite allowance symbol" (not 1))))
+(< 
+  ("allowance" 
+    (sload 
+      (keccak256 0 32 (set 32 (caller) (set 0 ("from" (calldataload 4)) (initial))))
+      (initial)))
+  ("value to be transferred" (calldataload 68)))
+
+** Outcome Bad "reverted"
+
+** Storage
+(initial)
+
+* Path 6
+
+** Conditions
+(iszero (callvalue))
+(eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0))))
+(not (div (or ("to" (calldataload 36)) ("from" (calldataload 4))) (exp 160 2)))
+(not 
+  (< 
+    ("source balance" (sload ("from" (calldataload 4)) (initial)))
+    ("value to be transferred" (calldataload 68))))
+(not (eq? (caller) ("from" (calldataload 4))))
+(not 
+  (eq? 
+    ("allowance" 
+      (sload 
+        (keccak256 0 32 (set 32 (caller) (set 0 ("from" (calldataload 4)) (initial))))
+        (initial)))
+    ("infinite allowance symbol" (not 1))))
+(not 
+  (< 
+    ("allowance" 
+      (sload 
+        (keccak256 0 32 (set 32 (caller) (set 0 ("from" (calldataload 4)) (initial))))
+        (initial)))
+    ("value to be transferred" (calldataload 68))))
+
+** Outcome Good
+
+** Storage
+(set 
+  ("to" (calldataload 36))
+  (+ 
+    ("value to be transferred" (calldataload 68))
+    ("target balance" (sload ("to" (calldataload 36)) (initial))))
+  (set 
+    ("target balance" (sload ("to" (calldataload 36)) (initial)))
+    (- ("value to be transferred" (calldataload 68)) ("from" (calldataload 4)))
+    (set 
+      ("source balance" (sload ("from" (calldataload 4)) (initial)))
+      (- 
+        ("value to be transferred" (calldataload 68))
+        (keccak256 0 32 (set 32 (caller) (set 0 ("from" (calldataload 4)) (initial)))))
+      (initial))))
+
+* Path 7
+
+** Conditions
+(iszero (callvalue))
+(not 
+  (eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0)))))
+(eq? ("approve" 157198259) ("signature" (div (exp 224 2) (calldataload 0))))
+
+** Outcome Good
+
+** Storage
+(set 
+  (calldataload 36)
+  (keccak256 0 64 (set 32 (calldataload 36) (set 0 (caller) (initial))))
+  (initial))
+
+* Path 8
+
+** Conditions
+(iszero (callvalue))
+(not 
+  (eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("approve" 157198259) ("signature" (div (exp 224 2) (calldataload 0)))))
+(eq? ("withdraw" 773487949) ("signature" (div (exp 224 2) (calldataload 0))))
+(> (- (calldataload 4) (sload (caller) (initial))) (sload (caller) (initial)))
+
+** Outcome Bad "reverted"
+
+** Storage
+(initial)
+
+* Path 9
+
+** Conditions
+(iszero (callvalue))
+(not 
+  (eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("approve" 157198259) ("signature" (div (exp 224 2) (calldataload 0)))))
+(eq? ("withdraw" 773487949) ("signature" (div (exp 224 2) (calldataload 0))))
+(not (> (- (calldataload 4) (sload (caller) (initial))) (sload (caller) (initial))))
+(iszero 1)
+
+** Outcome Bad "reverted"
+
+** Storage
+(arbitrarily-altered 
+  (set 
+    (not 1)
+    (- 
+      (not 1)
+      (sload (calldataload 4) (set (caller) (sload (caller) (initial)) (initial))))
+    (set (caller) (sload (caller) (initial)) (initial))))
+
+* Path 10
+
+** Conditions
+(iszero (callvalue))
+(not 
+  (eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("approve" 157198259) ("signature" (div (exp 224 2) (calldataload 0)))))
+(eq? ("withdraw" 773487949) ("signature" (div (exp 224 2) (calldataload 0))))
+(not (> (- (calldataload 4) (sload (caller) (initial))) (sload (caller) (initial))))
+(not (iszero 1))
+
+** Outcome Good
+
+** Storage
+(arbitrarily-altered 
+  (set 
+    (not 1)
+    (- 
+      (not 1)
+      (sload (calldataload 4) (set (caller) (sload (caller) (initial)) (initial))))
+    (set (caller) (sload (caller) (initial)) (initial))))
+
+* Path 11
+
+** Conditions
+(iszero (callvalue))
+(not 
+  (eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("approve" 157198259) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("withdraw" 773487949) ("signature" (div (exp 224 2) (calldataload 0)))))
+(eq? ("balanceOf" 1889567281) ("signature" (div (exp 224 2) (calldataload 0))))
+
+** Outcome Good
+
+** Storage
+(initial)
+
+* Path 12
+
+** Conditions
+(iszero (callvalue))
+(not 
+  (eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("approve" 157198259) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("withdraw" 773487949) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("balanceOf" 1889567281) ("signature" (div (exp 224 2) (calldataload 0)))))
+(eq? ("totalSupply" 404098525) ("signature" (div (exp 224 2) (calldataload 0))))
+
+** Outcome Good
+
+** Storage
+(initial)
+
+* Path 13
+
+** Conditions
+(iszero (callvalue))
+(not 
+  (eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("approve" 157198259) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("withdraw" 773487949) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("balanceOf" 1889567281) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("totalSupply" 404098525) ("signature" (div (exp 224 2) (calldataload 0)))))
+(eq? ("allowance" 3714247998) ("signature" (div (exp 224 2) (calldataload 0))))
+
+** Outcome Good
+
+** Storage
+(initial)
+
+* Path 14
+
+** Conditions
+(iszero (callvalue))
+(not 
+  (eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("approve" 157198259) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("withdraw" 773487949) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("balanceOf" 1889567281) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("totalSupply" 404098525) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("allowance" 3714247998) ("signature" (div (exp 224 2) (calldataload 0)))))
+(eq? ("transfer" 2835717307) ("signature" (div (exp 224 2) (calldataload 0))))
+(div (or ("recipient" (calldataload 4)) (caller)) (exp 160 2))
+
+** Outcome Bad "reverted"
+
+** Storage
+(initial)
+
+* Path 15
+
+** Conditions
+(iszero (callvalue))
+(not 
+  (eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("approve" 157198259) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("withdraw" 773487949) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("balanceOf" 1889567281) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("totalSupply" 404098525) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("allowance" 3714247998) ("signature" (div (exp 224 2) (calldataload 0)))))
+(eq? ("transfer" 2835717307) ("signature" (div (exp 224 2) (calldataload 0))))
+(not (div (or ("recipient" (calldataload 4)) (caller)) (exp 160 2)))
+(< 
+  ("source balance" (sload (caller) (initial)))
+  ("value to be transferred" (calldataload 36)))
+
+** Outcome Bad "reverted"
+
+** Storage
+(initial)
+
+* Path 16
+
+** Conditions
+(iszero (callvalue))
+(not 
+  (eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("approve" 157198259) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("withdraw" 773487949) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("balanceOf" 1889567281) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("totalSupply" 404098525) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("allowance" 3714247998) ("signature" (div (exp 224 2) (calldataload 0)))))
+(eq? ("transfer" 2835717307) ("signature" (div (exp 224 2) (calldataload 0))))
+(not (div (or ("recipient" (calldataload 4)) (caller)) (exp 160 2)))
+(not 
+  (< 
+    ("source balance" (sload (caller) (initial)))
+    ("value to be transferred" (calldataload 36))))
+(eq? (caller) (caller))
+
+** Outcome Good
+
+** Storage
+(set 
+  ("recipient" (calldataload 4))
+  (+ 
+    ("value to be transferred" (calldataload 36))
+    ("target balance" (sload ("recipient" (calldataload 4)) (initial))))
+  (set 
+    ("target balance" (sload ("recipient" (calldataload 4)) (initial)))
+    (- ("value to be transferred" (calldataload 36)) (caller))
+    (initial)))
+
+* Path 17
+
+** Conditions
+(iszero (callvalue))
+(not 
+  (eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("approve" 157198259) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("withdraw" 773487949) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("balanceOf" 1889567281) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("totalSupply" 404098525) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("allowance" 3714247998) ("signature" (div (exp 224 2) (calldataload 0)))))
+(eq? ("transfer" 2835717307) ("signature" (div (exp 224 2) (calldataload 0))))
+(not (div (or ("recipient" (calldataload 4)) (caller)) (exp 160 2)))
+(not 
+  (< 
+    ("source balance" (sload (caller) (initial)))
+    ("value to be transferred" (calldataload 36))))
+(not (eq? (caller) (caller)))
+(eq? 
+  ("allowance" 
+    (sload (keccak256 0 32 (set 32 (caller) (set 0 (caller) (initial)))) (initial)))
+  ("infinite allowance symbol" (not 1)))
+
+** Outcome Good
+
+** Storage
+(set 
+  ("target balance" (sload ("recipient" (calldataload 4)) (initial)))
+  (+ (caller) (keccak256 0 32 (set 32 (caller) (set 0 (caller) (initial)))))
+  (set 
+    (keccak256 0 32 (set 32 (caller) (set 0 (caller) (initial))))
+    (- (caller) ("source balance" (sload (caller) (initial))))
+    (initial)))
+
+* Path 18
+
+** Conditions
+(iszero (callvalue))
+(not 
+  (eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("approve" 157198259) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("withdraw" 773487949) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("balanceOf" 1889567281) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("totalSupply" 404098525) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("allowance" 3714247998) ("signature" (div (exp 224 2) (calldataload 0)))))
+(eq? ("transfer" 2835717307) ("signature" (div (exp 224 2) (calldataload 0))))
+(not (div (or ("recipient" (calldataload 4)) (caller)) (exp 160 2)))
+(not 
+  (< 
+    ("source balance" (sload (caller) (initial)))
+    ("value to be transferred" (calldataload 36))))
+(not (eq? (caller) (caller)))
+(not 
+  (eq? 
+    ("allowance" 
+      (sload (keccak256 0 32 (set 32 (caller) (set 0 (caller) (initial)))) (initial)))
+    ("infinite allowance symbol" (not 1))))
+(< 
+  ("allowance" 
+    (sload (keccak256 0 32 (set 32 (caller) (set 0 (caller) (initial)))) (initial)))
+  ("value to be transferred" (calldataload 36)))
+
+** Outcome Bad "reverted"
+
+** Storage
+(initial)
+
+* Path 19
+
+** Conditions
+(iszero (callvalue))
+(not 
+  (eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("approve" 157198259) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("withdraw" 773487949) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("balanceOf" 1889567281) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("totalSupply" 404098525) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("allowance" 3714247998) ("signature" (div (exp 224 2) (calldataload 0)))))
+(eq? ("transfer" 2835717307) ("signature" (div (exp 224 2) (calldataload 0))))
+(not (div (or ("recipient" (calldataload 4)) (caller)) (exp 160 2)))
+(not 
+  (< 
+    ("source balance" (sload (caller) (initial)))
+    ("value to be transferred" (calldataload 36))))
+(not (eq? (caller) (caller)))
+(not 
+  (eq? 
+    ("allowance" 
+      (sload (keccak256 0 32 (set 32 (caller) (set 0 (caller) (initial)))) (initial)))
+    ("infinite allowance symbol" (not 1))))
+(not 
+  (< 
+    ("allowance" 
+      (sload (keccak256 0 32 (set 32 (caller) (set 0 (caller) (initial)))) (initial)))
+    ("value to be transferred" (calldataload 36))))
+
+** Outcome Good
+
+** Storage
+(set 
+  ("recipient" (calldataload 4))
+  (+ 
+    ("value to be transferred" (calldataload 36))
+    ("target balance" (sload ("recipient" (calldataload 4)) (initial))))
+  (set 
+    ("target balance" (sload ("recipient" (calldataload 4)) (initial)))
+    (- ("value to be transferred" (calldataload 36)) (caller))
+    (set 
+      ("source balance" (sload (caller) (initial)))
+      (- 
+        ("value to be transferred" (calldataload 36))
+        (keccak256 0 32 (set 32 (caller) (set 0 (caller) (initial)))))
+      (initial))))
+
+* Path 20
+
+** Conditions
+(iszero (callvalue))
+(not 
+  (eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("approve" 157198259) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("withdraw" 773487949) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("balanceOf" 1889567281) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("totalSupply" 404098525) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("allowance" 3714247998) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("transfer" 2835717307) ("signature" (div (exp 224 2) (calldataload 0)))))
+
+** Outcome Bad "reverted"
+
+** Storage
+(initial)
+
+* Path 21
+
+** Conditions
+(not (iszero (callvalue)))
+(eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0))))
+(div (or ("to" (calldataload 36)) ("from" (calldataload 4))) (exp 160 2))
+
+** Outcome Bad "reverted"
+
+** Storage
+(set 
+  (caller)
+  (+ 
+    ("old target balance" 
+      (sload 
+        (caller)
+        (set 
+          ("total supply slot" (not 1))
+          (+ 
+            ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+            (callvalue))
+          (initial))))
+    (callvalue))
+  (set 
+    ("total supply slot" (not 1))
+    (+ ("total supply" (sload ("total supply slot" (not 1)) (initial))) (callvalue))
+    (initial)))
+
+* Path 22
+
+** Conditions
+(not (iszero (callvalue)))
+(eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0))))
+(not (div (or ("to" (calldataload 36)) ("from" (calldataload 4))) (exp 160 2)))
+(< 
+  ("source balance" 
+    (sload 
+      ("from" (calldataload 4))
+      (set 
+        (caller)
+        (+ 
+          ("old target balance" 
+            (sload 
+              (caller)
+              (set 
+                ("total supply slot" (not 1))
+                (+ 
+                  ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                  (callvalue))
+                (initial))))
+          (callvalue))
+        (set 
+          ("total supply slot" (not 1))
+          (+ 
+            ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+            (callvalue))
+          (initial)))))
+  ("value to be transferred" (calldataload 68)))
+
+** Outcome Bad "reverted"
+
+** Storage
+(set 
+  (caller)
+  (+ 
+    ("old target balance" 
+      (sload 
+        (caller)
+        (set 
+          ("total supply slot" (not 1))
+          (+ 
+            ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+            (callvalue))
+          (initial))))
+    (callvalue))
+  (set 
+    ("total supply slot" (not 1))
+    (+ ("total supply" (sload ("total supply slot" (not 1)) (initial))) (callvalue))
+    (initial)))
+
+* Path 23
+
+** Conditions
+(not (iszero (callvalue)))
+(eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0))))
+(not (div (or ("to" (calldataload 36)) ("from" (calldataload 4))) (exp 160 2)))
+(not 
+  (< 
+    ("source balance" 
+      (sload 
+        ("from" (calldataload 4))
+        (set 
+          (caller)
+          (+ 
+            ("old target balance" 
+              (sload 
+                (caller)
+                (set 
+                  ("total supply slot" (not 1))
+                  (+ 
+                    ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                    (callvalue))
+                  (initial))))
+            (callvalue))
+          (set 
+            ("total supply slot" (not 1))
+            (+ 
+              ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+              (callvalue))
+            (initial)))))
+    ("value to be transferred" (calldataload 68))))
+(eq? (caller) ("from" (calldataload 4)))
+
+** Outcome Good
+
+** Storage
+(set 
+  ("to" (calldataload 36))
+  (+ 
+    ("value to be transferred" (calldataload 68))
+    ("target balance" 
+      (sload 
+        ("to" (calldataload 36))
+        (set 
+          (caller)
+          (+ 
+            ("old target balance" 
+              (sload 
+                (caller)
+                (set 
+                  ("total supply slot" (not 1))
+                  (+ 
+                    ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                    (callvalue))
+                  (initial))))
+            (callvalue))
+          (set 
+            ("total supply slot" (not 1))
+            (+ 
+              ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+              (callvalue))
+            (initial))))))
+  (set 
+    ("target balance" 
+      (sload 
+        ("to" (calldataload 36))
+        (set 
+          (caller)
+          (+ 
+            ("old target balance" 
+              (sload 
+                (caller)
+                (set 
+                  ("total supply slot" (not 1))
+                  (+ 
+                    ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                    (callvalue))
+                  (initial))))
+            (callvalue))
+          (set 
+            ("total supply slot" (not 1))
+            (+ 
+              ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+              (callvalue))
+            (initial)))))
+    (- ("value to be transferred" (calldataload 68)) ("from" (calldataload 4)))
+    (set 
+      (caller)
+      (+ 
+        ("old target balance" 
+          (sload 
+            (caller)
+            (set 
+              ("total supply slot" (not 1))
+              (+ 
+                ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                (callvalue))
+              (initial))))
+        (callvalue))
+      (set 
+        ("total supply slot" (not 1))
+        (+ 
+          ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+          (callvalue))
+        (initial)))))
+
+* Path 24
+
+** Conditions
+(not (iszero (callvalue)))
+(eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0))))
+(not (div (or ("to" (calldataload 36)) ("from" (calldataload 4))) (exp 160 2)))
+(not 
+  (< 
+    ("source balance" 
+      (sload 
+        ("from" (calldataload 4))
+        (set 
+          (caller)
+          (+ 
+            ("old target balance" 
+              (sload 
+                (caller)
+                (set 
+                  ("total supply slot" (not 1))
+                  (+ 
+                    ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                    (callvalue))
+                  (initial))))
+            (callvalue))
+          (set 
+            ("total supply slot" (not 1))
+            (+ 
+              ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+              (callvalue))
+            (initial)))))
+    ("value to be transferred" (calldataload 68))))
+(not (eq? (caller) ("from" (calldataload 4))))
+(eq? 
+  ("allowance" 
+    (sload 
+      (keccak256 
+        0
+        32
+        (set 
+          32
+          (caller)
+          (set 0 ("from" (calldataload 4)) (set 0 (callvalue) (initial)))))
+      (set 
+        (caller)
+        (+ 
+          ("old target balance" 
+            (sload 
+              (caller)
+              (set 
+                ("total supply slot" (not 1))
+                (+ 
+                  ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                  (callvalue))
+                (initial))))
+          (callvalue))
+        (set 
+          ("total supply slot" (not 1))
+          (+ 
+            ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+            (callvalue))
+          (initial)))))
+  ("infinite allowance symbol" (not 1)))
+
+** Outcome Good
+
+** Storage
+(set 
+  ("target balance" 
+    (sload 
+      ("to" (calldataload 36))
+      (set 
+        (caller)
+        (+ 
+          ("old target balance" 
+            (sload 
+              (caller)
+              (set 
+                ("total supply slot" (not 1))
+                (+ 
+                  ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                  (callvalue))
+                (initial))))
+          (callvalue))
+        (set 
+          ("total supply slot" (not 1))
+          (+ 
+            ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+            (callvalue))
+          (initial)))))
+  (+ 
+    ("from" (calldataload 4))
+    (keccak256 
+      0
+      32
+      (set 
+        32
+        (caller)
+        (set 0 ("from" (calldataload 4)) (set 0 (callvalue) (initial))))))
+  (set 
+    (keccak256 
+      0
+      32
+      (set 
+        32
+        (caller)
+        (set 0 ("from" (calldataload 4)) (set 0 (callvalue) (initial)))))
+    (- 
+      ("from" (calldataload 4))
+      ("source balance" 
+        (sload 
+          ("from" (calldataload 4))
+          (set 
+            (caller)
+            (+ 
+              ("old target balance" 
+                (sload 
+                  (caller)
+                  (set 
+                    ("total supply slot" (not 1))
+                    (+ 
+                      ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                      (callvalue))
+                    (initial))))
+              (callvalue))
+            (set 
+              ("total supply slot" (not 1))
+              (+ 
+                ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                (callvalue))
+              (initial))))))
+    (set 
+      (caller)
+      (+ 
+        ("old target balance" 
+          (sload 
+            (caller)
+            (set 
+              ("total supply slot" (not 1))
+              (+ 
+                ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                (callvalue))
+              (initial))))
+        (callvalue))
+      (set 
+        ("total supply slot" (not 1))
+        (+ 
+          ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+          (callvalue))
+        (initial)))))
+
+* Path 25
+
+** Conditions
+(not (iszero (callvalue)))
+(eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0))))
+(not (div (or ("to" (calldataload 36)) ("from" (calldataload 4))) (exp 160 2)))
+(not 
+  (< 
+    ("source balance" 
+      (sload 
+        ("from" (calldataload 4))
+        (set 
+          (caller)
+          (+ 
+            ("old target balance" 
+              (sload 
+                (caller)
+                (set 
+                  ("total supply slot" (not 1))
+                  (+ 
+                    ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                    (callvalue))
+                  (initial))))
+            (callvalue))
+          (set 
+            ("total supply slot" (not 1))
+            (+ 
+              ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+              (callvalue))
+            (initial)))))
+    ("value to be transferred" (calldataload 68))))
+(not (eq? (caller) ("from" (calldataload 4))))
+(not 
+  (eq? 
+    ("allowance" 
+      (sload 
+        (keccak256 
+          0
+          32
+          (set 
+            32
+            (caller)
+            (set 0 ("from" (calldataload 4)) (set 0 (callvalue) (initial)))))
+        (set 
+          (caller)
+          (+ 
+            ("old target balance" 
+              (sload 
+                (caller)
+                (set 
+                  ("total supply slot" (not 1))
+                  (+ 
+                    ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                    (callvalue))
+                  (initial))))
+            (callvalue))
+          (set 
+            ("total supply slot" (not 1))
+            (+ 
+              ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+              (callvalue))
+            (initial)))))
+    ("infinite allowance symbol" (not 1))))
+(< 
+  ("allowance" 
+    (sload 
+      (keccak256 
+        0
+        32
+        (set 
+          32
+          (caller)
+          (set 0 ("from" (calldataload 4)) (set 0 (callvalue) (initial)))))
+      (set 
+        (caller)
+        (+ 
+          ("old target balance" 
+            (sload 
+              (caller)
+              (set 
+                ("total supply slot" (not 1))
+                (+ 
+                  ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                  (callvalue))
+                (initial))))
+          (callvalue))
+        (set 
+          ("total supply slot" (not 1))
+          (+ 
+            ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+            (callvalue))
+          (initial)))))
+  ("value to be transferred" (calldataload 68)))
+
+** Outcome Bad "reverted"
+
+** Storage
+(set 
+  (caller)
+  (+ 
+    ("old target balance" 
+      (sload 
+        (caller)
+        (set 
+          ("total supply slot" (not 1))
+          (+ 
+            ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+            (callvalue))
+          (initial))))
+    (callvalue))
+  (set 
+    ("total supply slot" (not 1))
+    (+ ("total supply" (sload ("total supply slot" (not 1)) (initial))) (callvalue))
+    (initial)))
+
+* Path 26
+
+** Conditions
+(not (iszero (callvalue)))
+(eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0))))
+(not (div (or ("to" (calldataload 36)) ("from" (calldataload 4))) (exp 160 2)))
+(not 
+  (< 
+    ("source balance" 
+      (sload 
+        ("from" (calldataload 4))
+        (set 
+          (caller)
+          (+ 
+            ("old target balance" 
+              (sload 
+                (caller)
+                (set 
+                  ("total supply slot" (not 1))
+                  (+ 
+                    ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                    (callvalue))
+                  (initial))))
+            (callvalue))
+          (set 
+            ("total supply slot" (not 1))
+            (+ 
+              ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+              (callvalue))
+            (initial)))))
+    ("value to be transferred" (calldataload 68))))
+(not (eq? (caller) ("from" (calldataload 4))))
+(not 
+  (eq? 
+    ("allowance" 
+      (sload 
+        (keccak256 
+          0
+          32
+          (set 
+            32
+            (caller)
+            (set 0 ("from" (calldataload 4)) (set 0 (callvalue) (initial)))))
+        (set 
+          (caller)
+          (+ 
+            ("old target balance" 
+              (sload 
+                (caller)
+                (set 
+                  ("total supply slot" (not 1))
+                  (+ 
+                    ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                    (callvalue))
+                  (initial))))
+            (callvalue))
+          (set 
+            ("total supply slot" (not 1))
+            (+ 
+              ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+              (callvalue))
+            (initial)))))
+    ("infinite allowance symbol" (not 1))))
+(not 
+  (< 
+    ("allowance" 
+      (sload 
+        (keccak256 
+          0
+          32
+          (set 
+            32
+            (caller)
+            (set 0 ("from" (calldataload 4)) (set 0 (callvalue) (initial)))))
+        (set 
+          (caller)
+          (+ 
+            ("old target balance" 
+              (sload 
+                (caller)
+                (set 
+                  ("total supply slot" (not 1))
+                  (+ 
+                    ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                    (callvalue))
+                  (initial))))
+            (callvalue))
+          (set 
+            ("total supply slot" (not 1))
+            (+ 
+              ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+              (callvalue))
+            (initial)))))
+    ("value to be transferred" (calldataload 68))))
+
+** Outcome Good
+
+** Storage
+(set 
+  ("to" (calldataload 36))
+  (+ 
+    ("value to be transferred" (calldataload 68))
+    ("target balance" 
+      (sload 
+        ("to" (calldataload 36))
+        (set 
+          (caller)
+          (+ 
+            ("old target balance" 
+              (sload 
+                (caller)
+                (set 
+                  ("total supply slot" (not 1))
+                  (+ 
+                    ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                    (callvalue))
+                  (initial))))
+            (callvalue))
+          (set 
+            ("total supply slot" (not 1))
+            (+ 
+              ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+              (callvalue))
+            (initial))))))
+  (set 
+    ("target balance" 
+      (sload 
+        ("to" (calldataload 36))
+        (set 
+          (caller)
+          (+ 
+            ("old target balance" 
+              (sload 
+                (caller)
+                (set 
+                  ("total supply slot" (not 1))
+                  (+ 
+                    ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                    (callvalue))
+                  (initial))))
+            (callvalue))
+          (set 
+            ("total supply slot" (not 1))
+            (+ 
+              ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+              (callvalue))
+            (initial)))))
+    (- ("value to be transferred" (calldataload 68)) ("from" (calldataload 4)))
+    (set 
+      ("source balance" 
+        (sload 
+          ("from" (calldataload 4))
+          (set 
+            (caller)
+            (+ 
+              ("old target balance" 
+                (sload 
+                  (caller)
+                  (set 
+                    ("total supply slot" (not 1))
+                    (+ 
+                      ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                      (callvalue))
+                    (initial))))
+              (callvalue))
+            (set 
+              ("total supply slot" (not 1))
+              (+ 
+                ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                (callvalue))
+              (initial)))))
+      (- 
+        ("value to be transferred" (calldataload 68))
+        (keccak256 
+          0
+          32
+          (set 
+            32
+            (caller)
+            (set 0 ("from" (calldataload 4)) (set 0 (callvalue) (initial))))))
+      (set 
+        (caller)
+        (+ 
+          ("old target balance" 
+            (sload 
+              (caller)
+              (set 
+                ("total supply slot" (not 1))
+                (+ 
+                  ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                  (callvalue))
+                (initial))))
+          (callvalue))
+        (set 
+          ("total supply slot" (not 1))
+          (+ 
+            ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+            (callvalue))
+          (initial))))))
+
+* Path 27
+
+** Conditions
+(not (iszero (callvalue)))
+(not 
+  (eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0)))))
+(eq? ("approve" 157198259) ("signature" (div (exp 224 2) (calldataload 0))))
+
+** Outcome Good
+
+** Storage
+(set 
+  (calldataload 36)
+  (keccak256 0 64 (set 32 (calldataload 36) (set 0 (caller) (set 0 (callvalue) (initial)))))
+  (set 
+    (caller)
+    (+ 
+      ("old target balance" 
+        (sload 
+          (caller)
+          (set 
+            ("total supply slot" (not 1))
+            (+ 
+              ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+              (callvalue))
+            (initial))))
+      (callvalue))
+    (set 
+      ("total supply slot" (not 1))
+      (+ 
+        ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+        (callvalue))
+      (initial))))
+
+* Path 28
+
+** Conditions
+(not (iszero (callvalue)))
+(not 
+  (eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("approve" 157198259) ("signature" (div (exp 224 2) (calldataload 0)))))
+(eq? ("withdraw" 773487949) ("signature" (div (exp 224 2) (calldataload 0))))
+(> 
+  (- 
+    (calldataload 4)
+    (sload 
+      (caller)
+      (set 
+        (caller)
+        (+ 
+          ("old target balance" 
+            (sload 
+              (caller)
+              (set 
+                ("total supply slot" (not 1))
+                (+ 
+                  ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                  (callvalue))
+                (initial))))
+          (callvalue))
+        (set 
+          ("total supply slot" (not 1))
+          (+ 
+            ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+            (callvalue))
+          (initial)))))
+  (sload 
+    (caller)
+    (set 
+      (caller)
+      (+ 
+        ("old target balance" 
+          (sload 
+            (caller)
+            (set 
+              ("total supply slot" (not 1))
+              (+ 
+                ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                (callvalue))
+              (initial))))
+        (callvalue))
+      (set 
+        ("total supply slot" (not 1))
+        (+ 
+          ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+          (callvalue))
+        (initial)))))
+
+** Outcome Bad "reverted"
+
+** Storage
+(set 
+  (caller)
+  (+ 
+    ("old target balance" 
+      (sload 
+        (caller)
+        (set 
+          ("total supply slot" (not 1))
+          (+ 
+            ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+            (callvalue))
+          (initial))))
+    (callvalue))
+  (set 
+    ("total supply slot" (not 1))
+    (+ ("total supply" (sload ("total supply slot" (not 1)) (initial))) (callvalue))
+    (initial)))
+
+* Path 29
+
+** Conditions
+(not (iszero (callvalue)))
+(not 
+  (eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("approve" 157198259) ("signature" (div (exp 224 2) (calldataload 0)))))
+(eq? ("withdraw" 773487949) ("signature" (div (exp 224 2) (calldataload 0))))
+(not 
+  (> 
+    (- 
+      (calldataload 4)
+      (sload 
+        (caller)
+        (set 
+          (caller)
+          (+ 
+            ("old target balance" 
+              (sload 
+                (caller)
+                (set 
+                  ("total supply slot" (not 1))
+                  (+ 
+                    ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                    (callvalue))
+                  (initial))))
+            (callvalue))
+          (set 
+            ("total supply slot" (not 1))
+            (+ 
+              ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+              (callvalue))
+            (initial)))))
+    (sload 
+      (caller)
+      (set 
+        (caller)
+        (+ 
+          ("old target balance" 
+            (sload 
+              (caller)
+              (set 
+                ("total supply slot" (not 1))
+                (+ 
+                  ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                  (callvalue))
+                (initial))))
+          (callvalue))
+        (set 
+          ("total supply slot" (not 1))
+          (+ 
+            ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+            (callvalue))
+          (initial))))))
+(iszero 1)
+
+** Outcome Bad "reverted"
+
+** Storage
+(arbitrarily-altered 
+  (set 
+    (not 1)
+    (- 
+      (not 1)
+      (sload 
+        (calldataload 4)
+        (set 
+          (caller)
+          (sload 
+            (caller)
+            (set 
+              (caller)
+              (+ 
+                ("old target balance" 
+                  (sload 
+                    (caller)
+                    (set 
+                      ("total supply slot" (not 1))
+                      (+ 
+                        ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                        (callvalue))
+                      (initial))))
+                (callvalue))
+              (set 
+                ("total supply slot" (not 1))
+                (+ 
+                  ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                  (callvalue))
+                (initial))))
+          (set 
+            (caller)
+            (+ 
+              ("old target balance" 
+                (sload 
+                  (caller)
+                  (set 
+                    ("total supply slot" (not 1))
+                    (+ 
+                      ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                      (callvalue))
+                    (initial))))
+              (callvalue))
+            (set 
+              ("total supply slot" (not 1))
+              (+ 
+                ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                (callvalue))
+              (initial))))))
+    (set 
+      (caller)
+      (sload 
+        (caller)
+        (set 
+          (caller)
+          (+ 
+            ("old target balance" 
+              (sload 
+                (caller)
+                (set 
+                  ("total supply slot" (not 1))
+                  (+ 
+                    ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                    (callvalue))
+                  (initial))))
+            (callvalue))
+          (set 
+            ("total supply slot" (not 1))
+            (+ 
+              ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+              (callvalue))
+            (initial))))
+      (set 
+        (caller)
+        (+ 
+          ("old target balance" 
+            (sload 
+              (caller)
+              (set 
+                ("total supply slot" (not 1))
+                (+ 
+                  ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                  (callvalue))
+                (initial))))
+          (callvalue))
+        (set 
+          ("total supply slot" (not 1))
+          (+ 
+            ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+            (callvalue))
+          (initial))))))
+
+* Path 30
+
+** Conditions
+(not (iszero (callvalue)))
+(not 
+  (eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("approve" 157198259) ("signature" (div (exp 224 2) (calldataload 0)))))
+(eq? ("withdraw" 773487949) ("signature" (div (exp 224 2) (calldataload 0))))
+(not 
+  (> 
+    (- 
+      (calldataload 4)
+      (sload 
+        (caller)
+        (set 
+          (caller)
+          (+ 
+            ("old target balance" 
+              (sload 
+                (caller)
+                (set 
+                  ("total supply slot" (not 1))
+                  (+ 
+                    ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                    (callvalue))
+                  (initial))))
+            (callvalue))
+          (set 
+            ("total supply slot" (not 1))
+            (+ 
+              ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+              (callvalue))
+            (initial)))))
+    (sload 
+      (caller)
+      (set 
+        (caller)
+        (+ 
+          ("old target balance" 
+            (sload 
+              (caller)
+              (set 
+                ("total supply slot" (not 1))
+                (+ 
+                  ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                  (callvalue))
+                (initial))))
+          (callvalue))
+        (set 
+          ("total supply slot" (not 1))
+          (+ 
+            ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+            (callvalue))
+          (initial))))))
+(not (iszero 1))
+
+** Outcome Good
+
+** Storage
+(arbitrarily-altered 
+  (set 
+    (not 1)
+    (- 
+      (not 1)
+      (sload 
+        (calldataload 4)
+        (set 
+          (caller)
+          (sload 
+            (caller)
+            (set 
+              (caller)
+              (+ 
+                ("old target balance" 
+                  (sload 
+                    (caller)
+                    (set 
+                      ("total supply slot" (not 1))
+                      (+ 
+                        ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                        (callvalue))
+                      (initial))))
+                (callvalue))
+              (set 
+                ("total supply slot" (not 1))
+                (+ 
+                  ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                  (callvalue))
+                (initial))))
+          (set 
+            (caller)
+            (+ 
+              ("old target balance" 
+                (sload 
+                  (caller)
+                  (set 
+                    ("total supply slot" (not 1))
+                    (+ 
+                      ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                      (callvalue))
+                    (initial))))
+              (callvalue))
+            (set 
+              ("total supply slot" (not 1))
+              (+ 
+                ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                (callvalue))
+              (initial))))))
+    (set 
+      (caller)
+      (sload 
+        (caller)
+        (set 
+          (caller)
+          (+ 
+            ("old target balance" 
+              (sload 
+                (caller)
+                (set 
+                  ("total supply slot" (not 1))
+                  (+ 
+                    ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                    (callvalue))
+                  (initial))))
+            (callvalue))
+          (set 
+            ("total supply slot" (not 1))
+            (+ 
+              ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+              (callvalue))
+            (initial))))
+      (set 
+        (caller)
+        (+ 
+          ("old target balance" 
+            (sload 
+              (caller)
+              (set 
+                ("total supply slot" (not 1))
+                (+ 
+                  ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                  (callvalue))
+                (initial))))
+          (callvalue))
+        (set 
+          ("total supply slot" (not 1))
+          (+ 
+            ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+            (callvalue))
+          (initial))))))
+
+* Path 31
+
+** Conditions
+(not (iszero (callvalue)))
+(not 
+  (eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("approve" 157198259) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("withdraw" 773487949) ("signature" (div (exp 224 2) (calldataload 0)))))
+(eq? ("balanceOf" 1889567281) ("signature" (div (exp 224 2) (calldataload 0))))
+
+** Outcome Good
+
+** Storage
+(set 
+  (caller)
+  (+ 
+    ("old target balance" 
+      (sload 
+        (caller)
+        (set 
+          ("total supply slot" (not 1))
+          (+ 
+            ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+            (callvalue))
+          (initial))))
+    (callvalue))
+  (set 
+    ("total supply slot" (not 1))
+    (+ ("total supply" (sload ("total supply slot" (not 1)) (initial))) (callvalue))
+    (initial)))
+
+* Path 32
+
+** Conditions
+(not (iszero (callvalue)))
+(not 
+  (eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("approve" 157198259) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("withdraw" 773487949) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("balanceOf" 1889567281) ("signature" (div (exp 224 2) (calldataload 0)))))
+(eq? ("totalSupply" 404098525) ("signature" (div (exp 224 2) (calldataload 0))))
+
+** Outcome Good
+
+** Storage
+(set 
+  (caller)
+  (+ 
+    ("old target balance" 
+      (sload 
+        (caller)
+        (set 
+          ("total supply slot" (not 1))
+          (+ 
+            ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+            (callvalue))
+          (initial))))
+    (callvalue))
+  (set 
+    ("total supply slot" (not 1))
+    (+ ("total supply" (sload ("total supply slot" (not 1)) (initial))) (callvalue))
+    (initial)))
+
+* Path 33
+
+** Conditions
+(not (iszero (callvalue)))
+(not 
+  (eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("approve" 157198259) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("withdraw" 773487949) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("balanceOf" 1889567281) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("totalSupply" 404098525) ("signature" (div (exp 224 2) (calldataload 0)))))
+(eq? ("allowance" 3714247998) ("signature" (div (exp 224 2) (calldataload 0))))
+
+** Outcome Good
+
+** Storage
+(set 
+  (caller)
+  (+ 
+    ("old target balance" 
+      (sload 
+        (caller)
+        (set 
+          ("total supply slot" (not 1))
+          (+ 
+            ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+            (callvalue))
+          (initial))))
+    (callvalue))
+  (set 
+    ("total supply slot" (not 1))
+    (+ ("total supply" (sload ("total supply slot" (not 1)) (initial))) (callvalue))
+    (initial)))
+
+* Path 34
+
+** Conditions
+(not (iszero (callvalue)))
+(not 
+  (eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("approve" 157198259) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("withdraw" 773487949) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("balanceOf" 1889567281) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("totalSupply" 404098525) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("allowance" 3714247998) ("signature" (div (exp 224 2) (calldataload 0)))))
+(eq? ("transfer" 2835717307) ("signature" (div (exp 224 2) (calldataload 0))))
+(div (or ("recipient" (calldataload 4)) (caller)) (exp 160 2))
+
+** Outcome Bad "reverted"
+
+** Storage
+(set 
+  (caller)
+  (+ 
+    ("old target balance" 
+      (sload 
+        (caller)
+        (set 
+          ("total supply slot" (not 1))
+          (+ 
+            ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+            (callvalue))
+          (initial))))
+    (callvalue))
+  (set 
+    ("total supply slot" (not 1))
+    (+ ("total supply" (sload ("total supply slot" (not 1)) (initial))) (callvalue))
+    (initial)))
+
+* Path 35
+
+** Conditions
+(not (iszero (callvalue)))
+(not 
+  (eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("approve" 157198259) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("withdraw" 773487949) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("balanceOf" 1889567281) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("totalSupply" 404098525) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("allowance" 3714247998) ("signature" (div (exp 224 2) (calldataload 0)))))
+(eq? ("transfer" 2835717307) ("signature" (div (exp 224 2) (calldataload 0))))
+(not (div (or ("recipient" (calldataload 4)) (caller)) (exp 160 2)))
+(< 
+  ("source balance" 
+    (sload 
+      (caller)
+      (set 
+        (caller)
+        (+ 
+          ("old target balance" 
+            (sload 
+              (caller)
+              (set 
+                ("total supply slot" (not 1))
+                (+ 
+                  ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                  (callvalue))
+                (initial))))
+          (callvalue))
+        (set 
+          ("total supply slot" (not 1))
+          (+ 
+            ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+            (callvalue))
+          (initial)))))
+  ("value to be transferred" (calldataload 36)))
+
+** Outcome Bad "reverted"
+
+** Storage
+(set 
+  (caller)
+  (+ 
+    ("old target balance" 
+      (sload 
+        (caller)
+        (set 
+          ("total supply slot" (not 1))
+          (+ 
+            ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+            (callvalue))
+          (initial))))
+    (callvalue))
+  (set 
+    ("total supply slot" (not 1))
+    (+ ("total supply" (sload ("total supply slot" (not 1)) (initial))) (callvalue))
+    (initial)))
+
+* Path 36
+
+** Conditions
+(not (iszero (callvalue)))
+(not 
+  (eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("approve" 157198259) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("withdraw" 773487949) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("balanceOf" 1889567281) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("totalSupply" 404098525) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("allowance" 3714247998) ("signature" (div (exp 224 2) (calldataload 0)))))
+(eq? ("transfer" 2835717307) ("signature" (div (exp 224 2) (calldataload 0))))
+(not (div (or ("recipient" (calldataload 4)) (caller)) (exp 160 2)))
+(not 
+  (< 
+    ("source balance" 
+      (sload 
+        (caller)
+        (set 
+          (caller)
+          (+ 
+            ("old target balance" 
+              (sload 
+                (caller)
+                (set 
+                  ("total supply slot" (not 1))
+                  (+ 
+                    ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                    (callvalue))
+                  (initial))))
+            (callvalue))
+          (set 
+            ("total supply slot" (not 1))
+            (+ 
+              ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+              (callvalue))
+            (initial)))))
+    ("value to be transferred" (calldataload 36))))
+(eq? (caller) (caller))
+
+** Outcome Good
+
+** Storage
+(set 
+  ("recipient" (calldataload 4))
+  (+ 
+    ("value to be transferred" (calldataload 36))
+    ("target balance" 
+      (sload 
+        ("recipient" (calldataload 4))
+        (set 
+          (caller)
+          (+ 
+            ("old target balance" 
+              (sload 
+                (caller)
+                (set 
+                  ("total supply slot" (not 1))
+                  (+ 
+                    ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                    (callvalue))
+                  (initial))))
+            (callvalue))
+          (set 
+            ("total supply slot" (not 1))
+            (+ 
+              ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+              (callvalue))
+            (initial))))))
+  (set 
+    ("target balance" 
+      (sload 
+        ("recipient" (calldataload 4))
+        (set 
+          (caller)
+          (+ 
+            ("old target balance" 
+              (sload 
+                (caller)
+                (set 
+                  ("total supply slot" (not 1))
+                  (+ 
+                    ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                    (callvalue))
+                  (initial))))
+            (callvalue))
+          (set 
+            ("total supply slot" (not 1))
+            (+ 
+              ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+              (callvalue))
+            (initial)))))
+    (- ("value to be transferred" (calldataload 36)) (caller))
+    (set 
+      (caller)
+      (+ 
+        ("old target balance" 
+          (sload 
+            (caller)
+            (set 
+              ("total supply slot" (not 1))
+              (+ 
+                ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                (callvalue))
+              (initial))))
+        (callvalue))
+      (set 
+        ("total supply slot" (not 1))
+        (+ 
+          ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+          (callvalue))
+        (initial)))))
+
+* Path 37
+
+** Conditions
+(not (iszero (callvalue)))
+(not 
+  (eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("approve" 157198259) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("withdraw" 773487949) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("balanceOf" 1889567281) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("totalSupply" 404098525) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("allowance" 3714247998) ("signature" (div (exp 224 2) (calldataload 0)))))
+(eq? ("transfer" 2835717307) ("signature" (div (exp 224 2) (calldataload 0))))
+(not (div (or ("recipient" (calldataload 4)) (caller)) (exp 160 2)))
+(not 
+  (< 
+    ("source balance" 
+      (sload 
+        (caller)
+        (set 
+          (caller)
+          (+ 
+            ("old target balance" 
+              (sload 
+                (caller)
+                (set 
+                  ("total supply slot" (not 1))
+                  (+ 
+                    ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                    (callvalue))
+                  (initial))))
+            (callvalue))
+          (set 
+            ("total supply slot" (not 1))
+            (+ 
+              ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+              (callvalue))
+            (initial)))))
+    ("value to be transferred" (calldataload 36))))
+(not (eq? (caller) (caller)))
+(eq? 
+  ("allowance" 
+    (sload 
+      (keccak256 0 32 (set 32 (caller) (set 0 (caller) (set 0 (callvalue) (initial)))))
+      (set 
+        (caller)
+        (+ 
+          ("old target balance" 
+            (sload 
+              (caller)
+              (set 
+                ("total supply slot" (not 1))
+                (+ 
+                  ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                  (callvalue))
+                (initial))))
+          (callvalue))
+        (set 
+          ("total supply slot" (not 1))
+          (+ 
+            ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+            (callvalue))
+          (initial)))))
+  ("infinite allowance symbol" (not 1)))
+
+** Outcome Good
+
+** Storage
+(set 
+  ("target balance" 
+    (sload 
+      ("recipient" (calldataload 4))
+      (set 
+        (caller)
+        (+ 
+          ("old target balance" 
+            (sload 
+              (caller)
+              (set 
+                ("total supply slot" (not 1))
+                (+ 
+                  ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                  (callvalue))
+                (initial))))
+          (callvalue))
+        (set 
+          ("total supply slot" (not 1))
+          (+ 
+            ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+            (callvalue))
+          (initial)))))
+  (+ 
+    (caller)
+    (keccak256 0 32 (set 32 (caller) (set 0 (caller) (set 0 (callvalue) (initial))))))
+  (set 
+    (keccak256 0 32 (set 32 (caller) (set 0 (caller) (set 0 (callvalue) (initial)))))
+    (- 
+      (caller)
+      ("source balance" 
+        (sload 
+          (caller)
+          (set 
+            (caller)
+            (+ 
+              ("old target balance" 
+                (sload 
+                  (caller)
+                  (set 
+                    ("total supply slot" (not 1))
+                    (+ 
+                      ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                      (callvalue))
+                    (initial))))
+              (callvalue))
+            (set 
+              ("total supply slot" (not 1))
+              (+ 
+                ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                (callvalue))
+              (initial))))))
+    (set 
+      (caller)
+      (+ 
+        ("old target balance" 
+          (sload 
+            (caller)
+            (set 
+              ("total supply slot" (not 1))
+              (+ 
+                ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                (callvalue))
+              (initial))))
+        (callvalue))
+      (set 
+        ("total supply slot" (not 1))
+        (+ 
+          ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+          (callvalue))
+        (initial)))))
+
+* Path 38
+
+** Conditions
+(not (iszero (callvalue)))
+(not 
+  (eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("approve" 157198259) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("withdraw" 773487949) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("balanceOf" 1889567281) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("totalSupply" 404098525) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("allowance" 3714247998) ("signature" (div (exp 224 2) (calldataload 0)))))
+(eq? ("transfer" 2835717307) ("signature" (div (exp 224 2) (calldataload 0))))
+(not (div (or ("recipient" (calldataload 4)) (caller)) (exp 160 2)))
+(not 
+  (< 
+    ("source balance" 
+      (sload 
+        (caller)
+        (set 
+          (caller)
+          (+ 
+            ("old target balance" 
+              (sload 
+                (caller)
+                (set 
+                  ("total supply slot" (not 1))
+                  (+ 
+                    ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                    (callvalue))
+                  (initial))))
+            (callvalue))
+          (set 
+            ("total supply slot" (not 1))
+            (+ 
+              ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+              (callvalue))
+            (initial)))))
+    ("value to be transferred" (calldataload 36))))
+(not (eq? (caller) (caller)))
+(not 
+  (eq? 
+    ("allowance" 
+      (sload 
+        (keccak256 0 32 (set 32 (caller) (set 0 (caller) (set 0 (callvalue) (initial)))))
+        (set 
+          (caller)
+          (+ 
+            ("old target balance" 
+              (sload 
+                (caller)
+                (set 
+                  ("total supply slot" (not 1))
+                  (+ 
+                    ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                    (callvalue))
+                  (initial))))
+            (callvalue))
+          (set 
+            ("total supply slot" (not 1))
+            (+ 
+              ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+              (callvalue))
+            (initial)))))
+    ("infinite allowance symbol" (not 1))))
+(< 
+  ("allowance" 
+    (sload 
+      (keccak256 0 32 (set 32 (caller) (set 0 (caller) (set 0 (callvalue) (initial)))))
+      (set 
+        (caller)
+        (+ 
+          ("old target balance" 
+            (sload 
+              (caller)
+              (set 
+                ("total supply slot" (not 1))
+                (+ 
+                  ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                  (callvalue))
+                (initial))))
+          (callvalue))
+        (set 
+          ("total supply slot" (not 1))
+          (+ 
+            ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+            (callvalue))
+          (initial)))))
+  ("value to be transferred" (calldataload 36)))
+
+** Outcome Bad "reverted"
+
+** Storage
+(set 
+  (caller)
+  (+ 
+    ("old target balance" 
+      (sload 
+        (caller)
+        (set 
+          ("total supply slot" (not 1))
+          (+ 
+            ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+            (callvalue))
+          (initial))))
+    (callvalue))
+  (set 
+    ("total supply slot" (not 1))
+    (+ ("total supply" (sload ("total supply slot" (not 1)) (initial))) (callvalue))
+    (initial)))
+
+* Path 39
+
+** Conditions
+(not (iszero (callvalue)))
+(not 
+  (eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("approve" 157198259) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("withdraw" 773487949) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("balanceOf" 1889567281) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("totalSupply" 404098525) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("allowance" 3714247998) ("signature" (div (exp 224 2) (calldataload 0)))))
+(eq? ("transfer" 2835717307) ("signature" (div (exp 224 2) (calldataload 0))))
+(not (div (or ("recipient" (calldataload 4)) (caller)) (exp 160 2)))
+(not 
+  (< 
+    ("source balance" 
+      (sload 
+        (caller)
+        (set 
+          (caller)
+          (+ 
+            ("old target balance" 
+              (sload 
+                (caller)
+                (set 
+                  ("total supply slot" (not 1))
+                  (+ 
+                    ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                    (callvalue))
+                  (initial))))
+            (callvalue))
+          (set 
+            ("total supply slot" (not 1))
+            (+ 
+              ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+              (callvalue))
+            (initial)))))
+    ("value to be transferred" (calldataload 36))))
+(not (eq? (caller) (caller)))
+(not 
+  (eq? 
+    ("allowance" 
+      (sload 
+        (keccak256 0 32 (set 32 (caller) (set 0 (caller) (set 0 (callvalue) (initial)))))
+        (set 
+          (caller)
+          (+ 
+            ("old target balance" 
+              (sload 
+                (caller)
+                (set 
+                  ("total supply slot" (not 1))
+                  (+ 
+                    ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                    (callvalue))
+                  (initial))))
+            (callvalue))
+          (set 
+            ("total supply slot" (not 1))
+            (+ 
+              ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+              (callvalue))
+            (initial)))))
+    ("infinite allowance symbol" (not 1))))
+(not 
+  (< 
+    ("allowance" 
+      (sload 
+        (keccak256 0 32 (set 32 (caller) (set 0 (caller) (set 0 (callvalue) (initial)))))
+        (set 
+          (caller)
+          (+ 
+            ("old target balance" 
+              (sload 
+                (caller)
+                (set 
+                  ("total supply slot" (not 1))
+                  (+ 
+                    ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                    (callvalue))
+                  (initial))))
+            (callvalue))
+          (set 
+            ("total supply slot" (not 1))
+            (+ 
+              ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+              (callvalue))
+            (initial)))))
+    ("value to be transferred" (calldataload 36))))
+
+** Outcome Good
+
+** Storage
+(set 
+  ("recipient" (calldataload 4))
+  (+ 
+    ("value to be transferred" (calldataload 36))
+    ("target balance" 
+      (sload 
+        ("recipient" (calldataload 4))
+        (set 
+          (caller)
+          (+ 
+            ("old target balance" 
+              (sload 
+                (caller)
+                (set 
+                  ("total supply slot" (not 1))
+                  (+ 
+                    ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                    (callvalue))
+                  (initial))))
+            (callvalue))
+          (set 
+            ("total supply slot" (not 1))
+            (+ 
+              ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+              (callvalue))
+            (initial))))))
+  (set 
+    ("target balance" 
+      (sload 
+        ("recipient" (calldataload 4))
+        (set 
+          (caller)
+          (+ 
+            ("old target balance" 
+              (sload 
+                (caller)
+                (set 
+                  ("total supply slot" (not 1))
+                  (+ 
+                    ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                    (callvalue))
+                  (initial))))
+            (callvalue))
+          (set 
+            ("total supply slot" (not 1))
+            (+ 
+              ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+              (callvalue))
+            (initial)))))
+    (- ("value to be transferred" (calldataload 36)) (caller))
+    (set 
+      ("source balance" 
+        (sload 
+          (caller)
+          (set 
+            (caller)
+            (+ 
+              ("old target balance" 
+                (sload 
+                  (caller)
+                  (set 
+                    ("total supply slot" (not 1))
+                    (+ 
+                      ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                      (callvalue))
+                    (initial))))
+              (callvalue))
+            (set 
+              ("total supply slot" (not 1))
+              (+ 
+                ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                (callvalue))
+              (initial)))))
+      (- 
+        ("value to be transferred" (calldataload 36))
+        (keccak256 0 32 (set 32 (caller) (set 0 (caller) (set 0 (callvalue) (initial))))))
+      (set 
+        (caller)
+        (+ 
+          ("old target balance" 
+            (sload 
+              (caller)
+              (set 
+                ("total supply slot" (not 1))
+                (+ 
+                  ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+                  (callvalue))
+                (initial))))
+          (callvalue))
+        (set 
+          ("total supply slot" (not 1))
+          (+ 
+            ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+            (callvalue))
+          (initial))))))
+
+* Path 40
+
+** Conditions
+(not (iszero (callvalue)))
+(not 
+  (eq? ("transferFrom" 599290589) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("approve" 157198259) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("withdraw" 773487949) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("balanceOf" 1889567281) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("totalSupply" 404098525) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("allowance" 3714247998) ("signature" (div (exp 224 2) (calldataload 0)))))
+(not (eq? ("transfer" 2835717307) ("signature" (div (exp 224 2) (calldataload 0)))))
+
+** Outcome Bad "reverted"
+
+** Storage
+(set 
+  (caller)
+  (+ 
+    ("old target balance" 
+      (sload 
+        (caller)
+        (set 
+          ("total supply slot" (not 1))
+          (+ 
+            ("total supply" (sload ("total supply slot" (not 1)) (initial)))
+            (callvalue))
+          (initial))))
+    (callvalue))
+  (set 
+    ("total supply slot" (not 1))
+    (+ ("total supply" (sload ("total supply slot" (not 1)) (initial))) (callvalue))
+    (initial)))
+

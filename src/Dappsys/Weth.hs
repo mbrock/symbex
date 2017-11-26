@@ -12,10 +12,10 @@ weth = assemble $ mdo
   callvalue; iszero; push dispatch; jumpi
 
   -- Calculate new total supply
-  (do push 1; not) ? "total supply slot"; sload ? "total supply"; callvalue; add
+  push 1; not ? "total supply slot"; sload ? "total supply"; callvalue; add
 
   -- Save new total supply to storage
-  (do push 1; not) ? "total supply slot"; sstore
+  push 1; not ? "total supply slot"; sstore
 
   -- Calculate new target balance
   caller; sload ? "old target balance"; callvalue; add
@@ -30,7 +30,7 @@ weth = assemble $ mdo
 
   -- Determine function signature
   dispatch <- label ? "dispatch"
-  (do push 0; calldataload; push 224; push 2; exp; div) ? "signature"
+  push 0; calldataload; push 224; push 2; exp; div ? "signature"
 
   dup 1; push 0x23b872dd ? "transferFrom"; eq; push transferFrom; jumpi
   dup 1; push 0x095ea7b3 ? "approve"; eq; push approve; jumpi
@@ -77,8 +77,8 @@ weth = assemble $ mdo
   push 0; mstore; push 32; push 0; return
 
   transfer <- label ? "transfer"
-  (do push 36; calldataload) ? "value to be transferred"
-  (do push 4;  calldataload) ? "recipient"
+  push 36; calldataload ? "value to be transferred"
+  push 4;  calldataload ? "recipient"
   caller; push attemptTransfer; jump
 
   transferFrom <- label ? "transferFrom"
