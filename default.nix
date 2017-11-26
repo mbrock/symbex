@@ -1,5 +1,5 @@
 { mkDerivation, aeson, base, bytestring, containers, mtl, s-cargot
-, sbv, stdenv, text, uniplate, vector
+, stdenv, text, uniplate, vector
 }:
 mkDerivation {
   pname = "symbex";
@@ -8,8 +8,7 @@ mkDerivation {
   isLibrary = false;
   isExecutable = true;
   executableHaskellDepends = [
-    aeson base bytestring containers mtl s-cargot sbv text uniplate
-    vector
+    aeson base bytestring containers mtl s-cargot text uniplate vector
   ];
   homepage = "https://github.com/dapphub/symbex";
   description = "Ethereum symbolic execution engine";

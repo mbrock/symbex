@@ -7,27 +7,27 @@ import System.Environment (getArgs)
 import Symbex
 import Print
 
-import Data.List (intercalate)
+import Dappsys.Weth
+
 import Data.Generics.Uniplate.Data
 
 import Data.Aeson (encode)
 import qualified Data.ByteString.Lazy.Char8 as B8
 
 showPath :: Path -> IO ()
-showPath (Path x (State { stack, memory, storage }) o) = do
-  putStrLn $ "Conditions:"
+showPath (Path x (State { storage }) o) = do
+  putStrLn $ "** Conditions"
   mapM_ putStrLn (map (display . rewrite optimize) x)
-  putStrLn ""
-  putStrLn $ "Outcome: " ++ show o
-  putStr "Stack:   "
-  putStrLn $ "(" ++ intercalate " " (map (display . rewrite optimize) stack) ++ ")"
+  putStrLn $ "\n** Outcome " ++ show o
+  -- putStr "Stack:   "
+  -- putStrLn $ "(" ++ intercalate " " (map (display . rewrite optimize) stack) ++ ")"
   -- putStr "Memory:  "
   -- putStrLn (display memory)
-  putStrLn "\nMemory:  "
-  putStrLn (display (rewriteBi (optimize :: AValue -> Maybe AValue) memory))
+  -- putStrLn "\nMemory:  "
+  -- putStrLn (display (rewriteBi (optimize :: AValue -> Maybe AValue) memory))
   -- putStr "Storage: "
   -- putStrLn (display storage)
-  putStrLn "\nStorage: "
+  putStrLn "\n** Storage"
   putStrLn (display (rewriteBi (optimize :: AValue -> Maybe AValue) storage))
   putStrLn ""
 
@@ -46,9 +46,7 @@ showPaths :: [Path] -> IO ()
 showPaths = mapM_ f . zip [1..]
   where
     f (i, x) = do
-      putStrLn "================"
-      putStrLn $ "Path " ++ show (i :: Int) ++ ". "
-      putStrLn "================\n"
+      putStrLn $ "* Path " ++ show (i :: Int) ++ "\n"
       showPath x
 
 main :: IO ()
