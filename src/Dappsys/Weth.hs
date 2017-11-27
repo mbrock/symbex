@@ -2,8 +2,8 @@
 
 module Dappsys.Weth where
 
+import EVM.Assembly
 import Prelude (($))
-import Symbex
 
 weth :: [Instr]
 weth = assemble $ mdo

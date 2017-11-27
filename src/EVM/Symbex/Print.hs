@@ -1,6 +1,7 @@
-module Print where
+module EVM.Symbex.Print where
 
-import Symbex
+import EVM.Symbex
+
 import Data.SCargot.Repr.Basic
 import Data.SCargot.Print
 import Data.Text (pack, unpack)

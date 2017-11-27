@@ -1,11 +1,12 @@
 {-# Language NamedFieldPuns #-}
 
-module Main where
+module EVM.Symbex.Main where
 
 import System.Environment (getArgs)
 
-import Symbex
-import Print
+import EVM.Assembly
+import EVM.Symbex
+import EVM.Symbex.Print
 
 import Dappsys.Weth
 

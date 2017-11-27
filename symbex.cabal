@@ -19,23 +19,24 @@ build-type:
 cabal-version:
   >=1.10
 
-executable symbex
-  main-is:
-    Main.hs
+library
+  exposed-modules:
+    EVM.Assembly,
+    EVM.Symbex,
+    EVM.Symbex.Print,
+    EVM.Symbex.Main,
+    Dappsys.Weth
   ghc-options:
     -O2 -Wall -Werror
   build-depends:
-    base >=4.9 && <4.10,
-    containers                        >= 0.5.7 && < 0.6,
-    bytestring                        >= 0.10.8 && < 0.11,
-    text                              >= 1.2.2 && < 1.3,
-    vector                            >= 0.11.0 && < 0.13,
-    mtl                               >= 2.2.1 && < 2.3,
-    uniplate                          >= 1.6 && < 1.7,
-    s-cargot                          == 0.1.2.0,
-    aeson                             >= 1 && < 1.3
-  hs-source-dirs:
-    src
+    base >= 4.9 && < 4.10,
+    mtl,
+    aeson,
+    uniplate,
+    s-cargot,
+    text,
+    bytestring
+  hs-source-dirs: src
   default-language:
     Haskell2010
   default-extensions:
@@ -48,3 +49,14 @@ executable symbex
     OverloadedStrings,
     Rank2Types,
     TypeFamilies
+
+executable symbex
+  main-is:
+    Main.hs
+  ghc-options:
+    -O2 -Wall -Werror
+  build-depends:
+    base >=4.9 && <4.10,
+    symbex
+  default-language:
+    Haskell2010
