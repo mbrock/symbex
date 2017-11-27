@@ -13,9 +13,13 @@ import Data.Aeson (ToJSON ())
 import Data.Word
 import Data.List (unfoldr, mapAccumL)
 import Data.Bits
+import Text.Printf
 
 type Assembler i a = Monad.State ([i], Integer) a
 type Assembly = Assembler Instr ()
+
+bytecode :: Assembly -> String
+bytecode = concatMap (printf "%02x") . compile . assemble
 
 emit :: Instr' -> Assembly
 emit x =
