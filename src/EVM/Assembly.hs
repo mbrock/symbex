@@ -6,14 +6,17 @@ module EVM.Assembly where
 
 import Prelude hiding (not, and, or, exp, return, div, log)
 
+import Data.Aeson (ToJSON (..), object, (.=))
+import Data.Bits
+import Data.List (unfoldr, mapAccumL)
+import Data.Word
+import Text.Printf
+
+import GHC.Generics
+import GHC.Stack
+
 import Control.Monad.State (get, modify, execState)
 import qualified Control.Monad.State as Monad
-import GHC.Generics
-import Data.Aeson (ToJSON ())
-import Data.Word
-import Data.List (unfoldr, mapAccumL)
-import Data.Bits
-import Text.Printf
 
 type Assembler i a = Monad.State ([i], Integer) a
 type Assembly = Assembler Instr ()
@@ -21,11 +24,11 @@ type Assembly = Assembler Instr ()
 bytecode :: Assembly -> String
 bytecode = concatMap (printf "%02x") . compile . assemble
 
-emit :: Instr' -> Assembly
-emit x =
+emit :: CallStack -> Instr' -> Assembly
+emit cs x =
   modify $
     \(xs, i) ->
-      (Instr Nothing x : xs, succ i)
+      (Instr Nothing cs x : xs, succ i)
 
 assemble :: Assembly -> [Instr]
 assemble x = reverse y
@@ -34,7 +37,8 @@ assemble x = reverse y
 as :: String -> Assembler Instr a -> Assembler Instr a
 as s m =
   do r <- m
-     modify $ \(Instr _ x : xs, i) -> (Instr (Just s) x : xs, i)
+     modify $
+       \(Instr _ cs x : xs, i) -> (Instr (Just s) cs x : xs, i)
      pure r
 
 (?) :: Assembler Instr a -> String -> Assembler Instr a
@@ -45,14 +49,17 @@ infix 0 ?
 data Label = Label Integer
   deriving (Show, Generic)
 
-label :: Assembler Instr Label
+label :: HasCallStack => Assembler Instr Label
 label = do
   (_, i) <- get
-  emit Jumpdest
+  emit callStack Jumpdest
   pure (Label i)
 
-data Instr = Instr { instrAnnotation :: Maybe String, op :: Instr' }
-  deriving (Show, Generic)
+data Instr = Instr
+  { instrAnnotation :: Maybe String
+  , instrCallstack :: CallStack
+  , op :: Instr'
+  } deriving (Show, Generic)
 
 data Instr'
   = Push Integer
@@ -98,46 +105,51 @@ data Instr'
 
 instance ToJSON Label
 instance ToJSON Instr'
-instance ToJSON Instr
+instance ToJSON Instr where
+  toJSON (Instr ann _ op) =
+    object
+      [ "instrAnnotation" .= toJSON ann
+      , "op" .= toJSON op
+      ]
 
-push :: Integer -> Assembly; push = emit . Push
-refer :: Label -> Assembly; refer = emit . PushLabel
-dup :: Int -> Assembly; dup = emit . Dup
-mstore :: Assembly; mstore = emit Mstore
-mstore8 :: Assembly; mstore8 = emit Mstore8
-mload :: Assembly; mload = emit Mload
-msize :: Assembly; msize = emit Msize
-pop :: Assembly; pop = emit Pop
-eq :: Assembly; eq = emit Eq
-stop :: Assembly; stop = emit Stop
-swap :: Int -> Assembly; swap = emit . Swap
-caller :: Assembly; caller = emit Caller
-jumpi :: Assembly; jumpi = emit Jumpi
-sload :: Assembly; sload = emit Sload
-sstore :: Assembly; sstore = emit Sstore
-byte :: Assembly; byte = emit Byte
-calldatasize :: Assembly; calldatasize = emit Calldatasize
-calldataload :: Assembly; calldataload = emit Calldataload
-calldatacopy :: Assembly; calldatacopy = emit Calldatacopy
-timestamp :: Assembly; timestamp = emit Timestamp
-gaslimit :: Assembly; gaslimit = emit Gaslimit
-gt :: Assembly; gt = emit Gt
-lt :: Assembly; lt = emit Lt
-add :: Assembly; add = emit Add
-sub :: Assembly; sub = emit Sub
-not :: Assembly; not = emit Not
-call :: Assembly; call = emit Call
-keccak256 :: Assembly; keccak256 = emit Keccak256
-exp :: Assembly; exp = emit Exp
-and :: Assembly; and = emit And
-or :: Assembly; or = emit Or
-div :: Assembly; div = emit Div
-return :: Assembly; return = emit Return
-iszero :: Assembly; iszero = emit Iszero
-jump :: Assembly; jump = emit Jump
-revert :: Assembly; revert = emit Revert
-callvalue :: Assembly; callvalue = emit Callvalue
-log :: Int -> Assembly; log = emit . Log
+push :: HasCallStack => Integer -> Assembly; push = emit callStack . Push
+refer :: HasCallStack => Label -> Assembly; refer = emit callStack . PushLabel
+dup :: HasCallStack => Int -> Assembly; dup = emit callStack . Dup
+mstore :: HasCallStack => Assembly; mstore = emit callStack Mstore
+mstore8 :: HasCallStack => Assembly; mstore8 = emit callStack Mstore8
+mload :: HasCallStack => Assembly; mload = emit callStack Mload
+msize :: HasCallStack => Assembly; msize = emit callStack Msize
+pop :: HasCallStack => Assembly; pop = emit callStack Pop
+eq :: HasCallStack => Assembly; eq = emit callStack Eq
+stop :: HasCallStack => Assembly; stop = emit callStack Stop
+swap :: HasCallStack => Int -> Assembly; swap = emit callStack . Swap
+caller :: HasCallStack => Assembly; caller = emit callStack Caller
+jumpi :: HasCallStack => Assembly; jumpi = emit callStack Jumpi
+sload :: HasCallStack => Assembly; sload = emit callStack Sload
+sstore :: HasCallStack => Assembly; sstore = emit callStack Sstore
+byte :: HasCallStack => Assembly; byte = emit callStack Byte
+calldatasize :: HasCallStack => Assembly; calldatasize = emit callStack Calldatasize
+calldataload :: HasCallStack => Assembly; calldataload = emit callStack Calldataload
+calldatacopy :: HasCallStack => Assembly; calldatacopy = emit callStack Calldatacopy
+timestamp :: HasCallStack => Assembly; timestamp = emit callStack Timestamp
+gaslimit :: HasCallStack => Assembly; gaslimit = emit callStack Gaslimit
+gt :: HasCallStack => Assembly; gt = emit callStack Gt
+lt :: HasCallStack => Assembly; lt = emit callStack Lt
+add :: HasCallStack => Assembly; add = emit callStack Add
+sub :: HasCallStack => Assembly; sub = emit callStack Sub
+not :: HasCallStack => Assembly; not = emit callStack Not
+call :: HasCallStack => Assembly; call = emit callStack Call
+keccak256 :: HasCallStack => Assembly; keccak256 = emit callStack Keccak256
+exp :: HasCallStack => Assembly; exp = emit callStack Exp
+and :: HasCallStack => Assembly; and = emit callStack And
+or :: HasCallStack => Assembly; or = emit callStack Or
+div :: HasCallStack => Assembly; div = emit callStack Div
+return :: HasCallStack => Assembly; return = emit callStack Return
+iszero :: HasCallStack => Assembly; iszero = emit callStack Iszero
+jump :: HasCallStack => Assembly; jump = emit callStack Jump
+revert :: HasCallStack => Assembly; revert = emit callStack Revert
+callvalue :: HasCallStack => Assembly; callvalue = emit callStack Callvalue
+log :: HasCallStack => Int -> Assembly; log = emit callStack . Log
 
 unroll :: Integer -> [Word8]
 unroll = unfoldr f

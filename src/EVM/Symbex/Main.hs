@@ -8,7 +8,7 @@ import EVM.Assembly
 import EVM.Symbex
 import EVM.Symbex.Print
 
-import Dappsys.Weth
+import qualified Dappsys.Weth
 
 import Data.Generics.Uniplate.Data
 
@@ -57,7 +57,7 @@ main = do
   xs <- getArgs
   case xs of
     ["--bytecode", "weth"] -> do
-      mapM_ (printf "%02x") (compile weth)
+      mapM_ (printf "%02x") (compile (assemble Dappsys.Weth.contract))
       putStrLn ""
     _ -> do
       let
@@ -67,7 +67,7 @@ main = do
             _ -> (False, xs)
         thing =
           case xs' of
-            ["weth"] -> weth
+            ["weth"] -> assemble Dappsys.Weth.contract
             ["multisig"] -> multisig2
             _ -> error "wtf"
 
