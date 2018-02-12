@@ -13,7 +13,11 @@ import qualified Dappsys.Weth
 import Data.Generics.Uniplate.Data
 
 import Data.Aeson (encode)
+import qualified Data.ByteString as BS
+import Data.Text.Encoding (encodeUtf8)
+import Data.Text (pack)
 import qualified Data.ByteString.Lazy.Char8 as B8
+import qualified Data.ByteString.Base16 as BS16
 
 import Text.Printf
 
@@ -59,6 +63,11 @@ main = do
     ["--bytecode", "weth"] -> do
       mapM_ (printf "%02x") (compile (assemble Dappsys.Weth.contract))
       putStrLn ""
+    ["--read", x] ->
+      case parse (BS.unpack (fst (BS16.decode (encodeUtf8 (pack x))))) of
+        Nothing -> error "wtf"
+        Just y ->
+          showPaths (run y)
     _ -> do
       let
         (json, xs') =

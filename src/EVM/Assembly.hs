@@ -78,6 +78,8 @@ data Instr'
   | Calldatasize
   | Gt
   | Lt
+  | Sgt
+  | Slt
   | Calldataload
   | Sload
   | Sstore
@@ -86,10 +88,11 @@ data Instr'
   | Msize
   | Keccak256
   | Timestamp
-  | Gaslimit
+  | Gas
   | Call
   | Sub
   | Add
+  | Mul
   | Not
   | And
   | Or
@@ -132,10 +135,13 @@ calldatasize :: HasCallStack => Assembly; calldatasize = emit callStack Calldata
 calldataload :: HasCallStack => Assembly; calldataload = emit callStack Calldataload
 calldatacopy :: HasCallStack => Assembly; calldatacopy = emit callStack Calldatacopy
 timestamp :: HasCallStack => Assembly; timestamp = emit callStack Timestamp
-gaslimit :: HasCallStack => Assembly; gaslimit = emit callStack Gaslimit
+gas :: HasCallStack => Assembly; gas = emit callStack Gas
 gt :: HasCallStack => Assembly; gt = emit callStack Gt
 lt :: HasCallStack => Assembly; lt = emit callStack Lt
+sgt :: HasCallStack => Assembly; sgt = emit callStack Sgt
+slt :: HasCallStack => Assembly; slt = emit callStack Slt
 add :: HasCallStack => Assembly; add = emit callStack Add
+mul :: HasCallStack => Assembly; mul = emit callStack Mul
 sub :: HasCallStack => Assembly; sub = emit callStack Sub
 not :: HasCallStack => Assembly; not = emit callStack Not
 call :: HasCallStack => Assembly; call = emit callStack Call
@@ -156,6 +162,10 @@ unroll = unfoldr f
   where
     f 0 = Nothing
     f i = Just (fromIntegral i, i `shiftR` 8)
+
+word :: [Word8] -> Integer
+word xs = sum [ fromIntegral x `shiftL` (8*n)
+              | (n, x) <- zip [0..] (reverse xs) ]
 
 pad :: Int -> a -> [a] -> [a]
 pad n x xs =
@@ -184,6 +194,60 @@ compile xs =
 
 data Pass1 = Bytecode [Word8] | Unresolved Int
 
+parse :: [Word8] -> Maybe [Instr]
+parse [] = Just []
+parse (b:bs) = do
+  let k x = (Instr Nothing callStack x :) <$> parse bs
+  case b of
+    x | x >= 0x60 && x <= 0x7f -> do
+      let n = fromIntegral x - 0x60 + 1
+          w = word (take n bs)
+      (Instr Nothing callStack (Push w) :) <$> parse (drop n bs)
+    x | x >= 0x80 && x <= 0x8f ->
+      k (Dup (fromIntegral x - 0x80 + 1))
+    x | x >= 0x90 && x <= 0x9f ->
+      k (Swap (fromIntegral x - 0x90 + 1))
+    x | x >= 0xa0 && x <= 0xa4 ->
+      k (Log (fromIntegral x - 0xa0 + 1))
+    0x00 -> k Stop
+    0x01 -> k Add
+    0x02 -> k Mul
+    0x03 -> k Sub
+    0x04 -> k Div
+    0x10 -> k Lt
+    0x11 -> k Gt
+    0x12 -> k Slt
+    0x13 -> k Sgt
+    0x14 -> k Eq
+    0x15 -> k Iszero
+    0x16 -> k And
+    0x17 -> k Or
+    0x19 -> k Not
+    0x1a -> k Byte
+    0x20 -> k Keccak256
+    0x33 -> k Caller
+    0x34 -> k Callvalue
+    0x35 -> k Calldataload
+    0x36 -> k Calldatasize
+    0x37 -> k Calldatacopy
+    0x42 -> k Timestamp
+    0x46 -> k Pop
+    0x51 -> k Mload
+    0x52 -> k Mstore
+    0x53 -> k Mstore8
+    0x54 -> k Sload
+    0x55 -> k Sstore
+    0x56 -> k Jump
+    0x57 -> k Jumpi
+    0x59 -> k Msize
+    0x5a -> k Gas
+    0x5b -> k Jumpdest
+    0x0a -> k Exp
+    0xf1 -> k Call
+    0xf3 -> k Return
+    0xfd -> k Revert
+    _ -> Nothing
+
 compile1 :: Instr' -> Pass1
 compile1 = \case
   Push x ->
@@ -209,6 +273,8 @@ compile1 = \case
   Calldatasize -> Bytecode [0x36]
   Gt -> Bytecode [0x11]
   Lt -> Bytecode [0x10]
+  Sgt -> Bytecode [0x13]
+  Slt -> Bytecode [0x12]
   Calldataload -> Bytecode [0x35]
   Sload -> Bytecode [0x54]
   Sstore -> Bytecode [0x55]
@@ -217,10 +283,11 @@ compile1 = \case
   Msize -> Bytecode [0x59]
   Keccak256 -> Bytecode [0x20]
   Timestamp -> Bytecode [0x42]
-  Gaslimit -> Bytecode [0x45]
+  Gas -> Bytecode [0x5a]
   Call -> Bytecode [0xf1]
-  Sub -> Bytecode [0x03]
   Add -> Bytecode [0x01]
+  Mul -> Bytecode [0x02]
+  Sub -> Bytecode [0x03]
   Not -> Bytecode [0x19]
   And -> Bytecode [0x16]
   Or -> Bytecode [0x17]

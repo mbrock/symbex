@@ -64,7 +64,7 @@ multisig2 = assemble $ mdo
   push 255; as "trigger state" not; swap 1; sstore
   push 0; push 0; push 96; calldatasize; sub; push 96
   push 64; calldataload; push 32; calldataload
-  gaslimit; call; pop
+  gas; call; pop
 instance ToJSON Value
 instance ToJSON AValue
 instance ToJSON Memory
@@ -81,7 +81,7 @@ data Value
   | TheCallvalue
   | TheCalldataWord AValue
   | TheTimestamp
-  | TheGaslimit
+  | TheGas
   | SomeCallResult
   | TheByte AValue AValue
   | SetByte Integer AValue AValue
@@ -89,9 +89,12 @@ data Value
   | Equality AValue AValue
   | IsGreaterThan AValue AValue
   | IsLessThan AValue AValue
+  | IsGreaterThanSigned AValue AValue
+  | IsLessThanSigned AValue AValue
   | Negation AValue
   | Minus AValue AValue
   | Plus AValue AValue
+  | Times AValue AValue
   | DividedBy AValue AValue
   | TheHashOf AValue AValue Memory
   | MemoryAt AValue Memory
@@ -319,6 +322,24 @@ exec (state @ State { stack, pc, memory, storage }) c =
         _ ->
           StackUnderrun instr
 
+    Sgt ->
+      case stack of
+        (x:y:stack') ->
+          Step $ state
+            { stack = As a (x `IsGreaterThanSigned` y) : stack'
+            , pc = succ pc }
+        _ ->
+          StackUnderrun instr
+
+    Slt ->
+      case stack of
+        (x:y:stack') ->
+          Step $ state
+            { stack = As a (x `IsLessThanSigned` y) : stack'
+            , pc = succ pc }
+        _ ->
+          StackUnderrun instr
+
     Div ->
       case stack of
         (x:y:stack') ->
@@ -391,9 +412,9 @@ exec (state @ State { stack, pc, memory, storage }) c =
         { stack = As a TheTimestamp : stack
         , pc = succ pc }
 
-    Gaslimit ->
+    Gas ->
       Step $ state
-        { stack = As a TheGaslimit : stack
+        { stack = As a TheGas : stack
         , pc = succ pc }
 
     Sub ->
@@ -409,6 +430,14 @@ exec (state @ State { stack, pc, memory, storage }) c =
         (x:y:stack') ->
           Step $ state
             { stack = As a (Plus y x) : stack'
+            , pc = succ pc }
+        _ -> StackUnderrun instr
+
+    Mul ->
+      case stack of
+        (x:y:stack') ->
+          Step $ state
+            { stack = As a (Times y x) : stack'
             , pc = succ pc }
         _ -> StackUnderrun instr
 

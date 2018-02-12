@@ -108,7 +108,7 @@ contract = mdo
   push 32; not; sstore                                            -- Save new total supply to storage
   push 0; push 0; push 0; push 0                                  -- No return data and no calldata
   dup 5; caller                                                   -- Send withdrawal amount to caller
-  gaslimit; call; iszero; refer fail; jumpi                       -- Make call, aborting on failure
+  gas; call; iszero; refer fail; jumpi                       -- Make call, aborting on failure
 
   -- Emit `Exit(address indexed, uint)'
   push 0x22d324652c93739755cf4581508b60875ebdd78c20c0cff5cf8e23452b299631

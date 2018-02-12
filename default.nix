@@ -1,5 +1,5 @@
-{ mkDerivation, aeson, base, bytestring, mtl, s-cargot, stdenv
-, text, uniplate
+{ mkDerivation, aeson, base, base16-bytestring, bytestring, mtl
+, s-cargot, stdenv, text, uniplate
 }:
 mkDerivation {
   pname = "symbex";
@@ -8,7 +8,7 @@ mkDerivation {
   isLibrary = true;
   isExecutable = true;
   libraryHaskellDepends = [
-    aeson base bytestring mtl s-cargot text uniplate
+    aeson base base16-bytestring bytestring mtl s-cargot text uniplate
   ];
   executableHaskellDepends = [ base ];
   homepage = "https://github.com/dapphub/symbex";

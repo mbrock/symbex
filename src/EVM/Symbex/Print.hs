@@ -21,7 +21,7 @@ instance SDisplay Value where
   s TheCallvalue = A "callvalue" ::: Nil
   s TheCalldatasize = A "calldatasize" ::: Nil
   s TheTimestamp = A "timestamp" ::: Nil
-  s TheGaslimit = A "gaslimit" ::: Nil
+  s TheGas = A "gas" ::: Nil
   s SomeCallResult = A "some-call-result" ::: Nil
   s (TheCalldataWord a) = A "calldataload" ::: s a ::: Nil
   s (TheByte a b) = A "byte" ::: s a ::: s b ::: Nil
@@ -29,7 +29,11 @@ instance SDisplay Value where
   s (Equality a b) = A "eq?" ::: s a ::: s b ::: Nil
   s (Minus a b) = A "-" ::: s a ::: s b ::: Nil
   s (Plus a b) = A "+" ::: s a ::: s b ::: Nil
+  s (Times a b) = A "*" ::: s a ::: s b ::: Nil
   s (a `IsGreaterThan` b) = A ">" ::: s a ::: s b ::: Nil
+  s (a `IsLessThan` b) = A "<" ::: s a ::: s b ::: Nil
+  s (a `IsGreaterThanSigned` b) = A ">s" ::: s a ::: s b ::: Nil
+  s (a `IsLessThanSigned` b) = A "<s" ::: s a ::: s b ::: Nil
   s (a `DividedBy` b) = A "div" ::: s a ::: s b ::: Nil
   s (IsZero a) = A "iszero" ::: s a ::: Nil
   s (Negation a) = A "not" ::: s a ::: Nil
@@ -38,7 +42,6 @@ instance SDisplay Value where
   s (MemoryAt x m) = A "mload" ::: s x ::: s m ::: Nil
   s (StorageAt x m) = A "sload" ::: s x ::: s m ::: Nil
   s (Max a b) = A "max" ::: s a ::: s b ::: Nil
-  s (IsLessThan a b) = A "<" ::: s a ::: s b ::: Nil
   s (Conjunction a b) = A "and" ::: s a ::: s b ::: Nil
   s (Disjunction a b) = A "or" ::: s a ::: s b ::: Nil
   s (Exponentiation a b) = A "exp" ::: s a ::: s b ::: Nil
