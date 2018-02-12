@@ -10,7 +10,7 @@ import EVM.Symbex.Print
 
 import qualified Dappsys.Weth
 
-import Data.Generics.Uniplate.Data
+-- import Data.Generics.Uniplate.Data
 
 import Data.Aeson (encode)
 import qualified Data.ByteString as BS
@@ -24,7 +24,8 @@ import Text.Printf
 showPath :: Path -> IO ()
 showPath (Path x (State { storage }) o) = do
   putStrLn $ "** Conditions"
-  mapM_ putStrLn (map (display . rewrite optimize) x)
+  -- mapM_ putStrLn (map (display . rewrite optimize) x)
+  mapM_ putStrLn (map display x)
   putStrLn $ "\n** Outcome " ++ show o
   -- putStr "Stack:   "
   -- putStrLn $ "(" ++ intercalate " " (map (display . rewrite optimize) stack) ++ ")"
@@ -35,7 +36,8 @@ showPath (Path x (State { storage }) o) = do
   -- putStr "Storage: "
   -- putStrLn (display storage)
   putStrLn "\n** Storage"
-  putStrLn (display (rewriteBi (optimize :: AValue -> Maybe AValue) storage))
+  -- putStrLn (display (rewriteBi (optimize :: AValue -> Maybe AValue) storage))
+  putStrLn (display storage)
   putStrLn ""
 
 emptyState :: State
