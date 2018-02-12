@@ -231,7 +231,7 @@ parse (b:bs) = do
     0x36 -> k Calldatasize
     0x37 -> k Calldatacopy
     0x42 -> k Timestamp
-    0x46 -> k Pop
+    0x50 -> k Pop
     0x51 -> k Mload
     0x52 -> k Mstore
     0x53 -> k Mstore8
