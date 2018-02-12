@@ -421,7 +421,7 @@ exec (state @ State { stack, pc, memory, storage }) c =
       case stack of
         (x:y:stack') ->
           Step $ state
-            { stack = As a (Minus y x) : stack'
+            { stack = As a (Minus x y) : stack'
             , pc = succ pc }
         _ -> StackUnderrun instr
 
@@ -429,7 +429,7 @@ exec (state @ State { stack, pc, memory, storage }) c =
       case stack of
         (x:y:stack') ->
           Step $ state
-            { stack = As a (Plus y x) : stack'
+            { stack = As a (Plus x y) : stack'
             , pc = succ pc }
         _ -> StackUnderrun instr
 
@@ -437,7 +437,7 @@ exec (state @ State { stack, pc, memory, storage }) c =
       case stack of
         (x:y:stack') ->
           Step $ state
-            { stack = As a (Times y x) : stack'
+            { stack = As a (Times x y) : stack'
             , pc = succ pc }
         _ -> StackUnderrun instr
 
@@ -445,7 +445,7 @@ exec (state @ State { stack, pc, memory, storage }) c =
       case stack of
         (x:y:stack') ->
           Step $ state
-            { stack = As a (Exponentiation y x) : stack'
+            { stack = As a (Exponentiation x y) : stack'
             , pc = succ pc }
         _ -> StackUnderrun instr
 
@@ -453,7 +453,7 @@ exec (state @ State { stack, pc, memory, storage }) c =
       case stack of
         (x:y:stack') ->
           Step $ state
-            { stack = As a (Conjunction y x) : stack'
+            { stack = As a (Conjunction x y) : stack'
             , pc = succ pc }
         _ -> StackUnderrun instr
 
@@ -461,7 +461,7 @@ exec (state @ State { stack, pc, memory, storage }) c =
       case stack of
         (x:y:stack') ->
           Step $ state
-            { stack = As a (Disjunction y x) : stack'
+            { stack = As a (Disjunction x y) : stack'
             , pc = succ pc }
         _ -> StackUnderrun instr
 
