@@ -3,7 +3,7 @@
 }:
 mkDerivation {
   pname = "symbex";
-  version = "0.5.1";
+  version = "0.6";
   src = ./.;
   isLibrary = true;
   isExecutable = true;
